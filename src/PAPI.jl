@@ -32,38 +32,98 @@ function num_counters()
     end
 end
 
-struct EventStats
+const Counts = Clonglong
+
+struct EventValues
     events::Vector{Event}
-    vals::Vector{Clonglong}
+    vals::Vector{Counts}
 end
 
-EventStats(events::Event...) = EventStats(events, zeros(Clonglong, length(events)))
-EventStats(events::NTuple{N, Event}) where N = EventStats(collect(events), zeros(Clonglong, N))
-EventStats(events::Vector{Event}) = EventStats(events, zeros(Clonglong, length(events)))
+EventValues(events::Event...) = EventValues(events, zeros(Counts, length(events)))
+EventValues(events::NTuple{N, Event}) where N = EventValues(collect(events), zeros(Counts, N))
+EventValues(events::Vector{Event}) = EventValues(events, zeros(Counts, length(events)))
 
-macro profile(events, ex)
-    quote
-        stats = EventStats($events)
-        start_counters(stats.events)
-        try
-            $(esc(ex))
-        finally
-            stop_counters!(stats.vals)
+struct EventStats
+    events::Vector{Event}
+    samples::Matrix{Counts}
+end
+
+EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]))
+
+gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
+
+function sample_once(f::Function, events::Vector{Event})
+    stats = EventValues(events)
+    start_counters(stats.events)
+    try
+        f()
+    finally
+        stop_counters!(stats.vals)
+    end
+
+    stats
+end
+
+sample_once(f::Function, events::NTuple{N, Event}) where N = sample_once(f, collect(events))
+
+function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epochs::Int64=1000)
+    num_events = length(events)
+    counts = Vector{Counts}(undef, num_events)
+    samples = Vector{Counts}[]
+
+    start_counters(events)
+    try
+        start_time = Base.time()
+        iters = 1
+        while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
+            gcscrub()
+            read_counters!(counts)
+            f()
+            read_counters!(counts)
+            push!(samples, copy(counts))
         end
-        stats
+    finally
+        stop_counters!(counts)
+    end
+
+    EventStats(events, hcat(samples...))
+end
+
+sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)
+
+macro profile_once(events, ex)
+    quote
+        sample_once(() -> $(esc(ex)), $events)
+    end
+end
+
+function kwargs(args...)
+    params = collect(args)
+    for ex in params
+        if isa(ex, Expr) && ex.head == :(=)
+            ex.head = :kw
+        end
+    end
+    params
+end
+
+macro profile(events, ex, args...)
+    params = kwargs(args...)
+    quote
+        sample(() -> $(esc(ex)), $events, $(params...))
     end
 end
 
 import Base: show, IO
-function show(io::IO, ::MIME"text/plain", stats::EventStats)
-    print(io, "PerfStats:")
+function show(io::IO, ::MIME"text/plain", stats::EventValues)
+    print(io, "EventValues:")
     for (e,v) in zip(stats.events, stats.vals)
         print(io, "\n  ", e, " = ", v)
     end
 end
 
-function show(io::IO, stats::EventStats)
-    print(io, "PerfStats")
+function show(io::IO, stats::EventValues)
+    print(io, "EventValues")
     if !get(io, :compact, false)
         for (e,v) in zip(stats.events, stats.vals)
             print(io, " ", e, "=", v)
@@ -71,5 +131,22 @@ function show(io::IO, stats::EventStats)
     end
 end
 
-export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters, @profile
+function show(io::IO, ::MIME"text/plain", stats::EventStats)
+    print(io, "EventStats:")
+    for (e,v) in zip(stats.events, eachrow(stats.samples))
+        print(io, "\n  ", e, " = ", v)
+    end
+end
+
+function show(io::IO, stats::EventStats)
+    print(io, "EventStats")
+    if !get(io, :compact, false)
+        for (e,v) in zip(stats.events, eachrow(stats.samples))
+            print(io, " ", e, "=", v)
+        end
+    end
+end
+
+export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters
+export @profile_once, @profile, sample, sample_once
 end # module
