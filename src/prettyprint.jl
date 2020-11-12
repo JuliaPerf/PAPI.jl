@@ -136,7 +136,16 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, Float64}, stats::
     elseif evt in (MEM_RCY, MEM_SCY, MEM_WCY, RES_STL)
         has_event(TOT_CYC, stats) do cycles
             pct = round((value / cycles)*100)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all cycles")
+            color = if pct > 50
+                COLOR_RED
+            elseif pct > 30
+                COLOR_MAGENTA
+            elseif pct > 10
+                COLOR_YELLOW
+            else
+                COLOR_NONE
+            end
+            print(io, " # $color$pct%$COLOR_RESET of all cycles")
         end
     end
 end
