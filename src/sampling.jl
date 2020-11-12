@@ -18,7 +18,7 @@ EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]))
 
 gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
 
-function sample_once(f::Function, events::Vector{Event})
+function profile(f::Function, events::Vector{Event})
     stats = EventValues(events)
     start_counters(stats.events)
     try
@@ -57,9 +57,9 @@ end
 
 sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)
 
-macro profile_once(events, ex)
+macro profile(events, ex)
     quote
-        sample_once(() -> $(esc(ex)), $events)
+        profile(() -> $(esc(ex)), $events)
     end
 end
 
@@ -73,7 +73,7 @@ function kwargs(args...)
     params
 end
 
-macro profile(events, ex, args...)
+macro sample(events, ex, args...)
     params = kwargs(args...)
     quote
         sample(() -> $(esc(ex)), $events, $(params...))
