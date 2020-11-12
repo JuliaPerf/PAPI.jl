@@ -6,6 +6,7 @@ include("events.jl")
 include("counters.jl")
 include("sampling.jl")
 include("prettyprint.jl")
+include("components.jl")
 
 function __init__()
     # init the library and make sure that some counters are available
@@ -34,7 +35,7 @@ function num_counters()
     end
 end
 
-
 export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters
-export @profile_once, @profile, sample, sample_once, available_events
+export @profile, @sample, sample, sample_once, available_events, name_to_event, event_to_name
+export find_component
 end # module

@@ -1,6 +1,6 @@
 # adapted from papiStdEventDefs.h
 @enum(Event::Cuint,
-    L1_DCM = 0x80000000,  # Level 1 data cache misses
+    L1_DCM = PAPI_PRESET_MASK,  # Level 1 data cache misses
     L1_ICM,  # Level 1 instruction cache misses
     L2_DCM,  # Level 2 data cache misses
     L2_ICM,  # Level 2 instruction cache misses
@@ -122,10 +122,17 @@ function exists(evt::Event)
     return errcode == PAPI_OK
 end
 
-function event_to_name(evt::Event)
+event_to_name(evt::Event) = event_to_name(Base.cconvert(Cuint, evt))
+function event_to_name(evt::Cuint)
 	str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
 	@papichk ccall((:PAPI_event_code_to_name, :libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
 	unsafe_string(pointer(str_buf))
+end
+
+function name_to_event(name::AbstractString)
+    evt = Ref{Cint}()
+    @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cint}), name, evt)
+    evt[]
 end
 
 available_events() = filter(exists, instances(Event))
