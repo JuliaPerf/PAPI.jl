@@ -32,27 +32,34 @@ end
 
 profile(f::Function, events::NTuple{N, Event}) where N = profile(f, collect(events))
 
-function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epochs::Int64=1000)
+function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1)
     num_events = length(events)
     counts = Vector{Counts}(undef, num_events)
     samples = Vector{Counts}[]
 
     start_counters(events)
     try
+        gcscrub()
+
+        for i in 1:warmup
+          f()
+        end
+
         start_time = Base.time()
         iters = 1
         while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
-            gcscrub()
+            gcsample && gcscrub()
             read_counters!(counts)
             f()
             read_counters!(counts)
             push!(samples, copy(counts))
+            iters += 1
         end
     finally
         stop_counters!(counts)
     end
 
-    EventStats(events, hcat(samples...))
+    EventStats(events, hcat(samples...)')
 end
 
 sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)
