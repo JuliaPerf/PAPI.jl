@@ -127,3 +127,5 @@ function event_to_name(evt::Event)
 	@papichk ccall((:PAPI_event_code_to_name, :libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
 	unsafe_string(pointer(str_buf))
 end
+
+available_events() = filter(exists, instances(Event))

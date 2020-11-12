@@ -36,5 +36,5 @@ end
 
 
 export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters
-export @profile_once, @profile, sample, sample_once
+export @profile_once, @profile, sample, sample_once, available_events
 end # module
