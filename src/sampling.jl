@@ -63,6 +63,12 @@ macro profile(events, ex)
     end
 end
 
+macro profile(ex)
+    quote
+        profile(() -> $(esc(ex)), [BR_INS, BR_MSP, TOT_INS, TOT_CYC])
+    end
+end
+
 function kwargs(args...)
     params = collect(args)
     for ex in params
