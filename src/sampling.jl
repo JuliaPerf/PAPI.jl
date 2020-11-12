@@ -30,7 +30,7 @@ function profile(f::Function, events::Vector{Event})
     stats
 end
 
-sample_once(f::Function, events::NTuple{N, Event}) where N = sample_once(f, collect(events))
+profile(f::Function, events::NTuple{N, Event}) where N = profile(f, collect(events))
 
 function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epochs::Int64=1000)
     num_events = length(events)
@@ -59,7 +59,7 @@ sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect
 
 macro profile(events, ex)
     quote
-        profile(() -> $(esc(ex)), $events)
+        profile(() -> $(esc(ex)), Event[$(esc(events))...])
     end
 end
 
@@ -82,6 +82,6 @@ end
 macro sample(events, ex, args...)
     params = kwargs(args...)
     quote
-        sample(() -> $(esc(ex)), $events, $(params...))
+        sample(() -> $(esc(ex)), Event[$(esc(events))...], $(params...))
     end
 end

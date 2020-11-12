@@ -2,12 +2,15 @@ struct Component
     cid::Cint
 end
 
-import Base: iterate
+import Base: iterate, IteratorSize, SizeUnknown, eltype
+IteratorSize(::Type{Component}) = SizeUnknown()
+eltype(::Type{Component}) = Native
+
 function iterate(comp::Component)
     id = Ref{Cuint}(PAPI_NATIVE_MASK)
     ret = ccall((:PAPI_enum_cmp_event, :libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_FIRST, comp.cid)
     if ret == PAPI_OK
-        (id[], id[])
+        (Native(id[]), id[])
     else
         nothing
     end
@@ -17,7 +20,7 @@ function iterate(comp::Component, state::Cuint)
     id = Ref{Cuint}(state)
     ret = ccall((:PAPI_enum_cmp_event, :libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_EVENTS, comp.cid)
     if ret == PAPI_OK
-        (id[], id[])
+        (Native(id[]), id[])
     else
         nothing
     end

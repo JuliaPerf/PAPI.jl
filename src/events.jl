@@ -1,5 +1,5 @@
 # adapted from papiStdEventDefs.h
-@enum(Event::Cuint,
+@enum(Preset::Cuint,
     L1_DCM = PAPI_PRESET_MASK,  # Level 1 data cache misses
     L1_ICM,  # Level 1 instruction cache misses
     L2_DCM,  # Level 2 data cache misses
@@ -111,6 +111,11 @@
     END      # This should always be last!
 )
 
+primitive type Native sizeof(Cuint)*8 end
+Native(x::Integer) = Base.bitcast(Native, convert(Cuint, x))
+Base.cconvert(::Type{T}, x::Native) where {T<:Integer} = Base.bitcast(T, x)::T
+
+const Event = Union{Preset, Native}
 const EventSet = Vector{Event}
 
 function exists(evt::Event)
@@ -132,7 +137,12 @@ end
 function name_to_event(name::AbstractString)
     evt = Ref{Cint}()
     @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cint}), name, evt)
-    evt[]
+    Native(evt[])
 end
 
-available_events() = filter(exists, instances(Event))
+function Base.show(io::IO, evt::Native)
+  name = event_to_name(evt)
+  print(io, name)
+end
+
+available_presets() = filter(exists, instances(Preset))
