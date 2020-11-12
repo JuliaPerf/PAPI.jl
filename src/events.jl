@@ -30,7 +30,7 @@
     BTAC_M,  # BTAC miss
     PRF_DM,  # Prefetch data instruction caused a miss
     L3_DCH,  # Level 3 Data Cache Hit
-    TLB_SD,  # Xlation loadookaside buffer shootdowns (SMP)
+    TLB_SD,  # Xlation lookaside buffer shootdowns (SMP)
     CSR_FAL, # Failed store conditional instructions
     CSR_SUC, # Successful store conditional instructions
     CSR_TOT, # Total store conditional instructions
@@ -45,8 +45,8 @@
     BR_UCN,  # Unconditional branch instructions executed
     BR_CN,   # Conditional branch instructions executed
     BR_TKN,  # Conditional branch instructions taken
-    BR_NTK,  # Conditional branch instructionsructions not taken
-    BR_MSP,  # Conditional branch instructionsructions mispred
+    BR_NTK,  # Conditional branch instructions not taken
+    BR_MSP,  # Conditional branch instructions mispred
     BR_PRC,  # Conditional branch instructions corr. pred
     FMA_INS, # FMA instructions completed
     TOT_IIS, # Total instructions issued
@@ -74,7 +74,7 @@
     L2_DCW,  # L2 D Cache Write
     L3_DCW,  # L3 D Cache Write
     L1_ICH,  # L1 instruction cache hits
-    L2_ICH,  # L2 instruction cache hitss
+    L2_ICH,  # L2 instruction cache hits
     L3_ICH,  # L3 instruction cache hits
     L1_ICA,  # L1 instruction cache accesses
     L2_ICA,  # L2 instruction cache accesses
