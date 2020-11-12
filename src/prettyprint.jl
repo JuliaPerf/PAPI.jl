@@ -104,34 +104,69 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, Float64}, stats::
             print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all stores")
         end
     elseif evt == L1_TCM || evt == L1_TCH
-        has_event(L1_TCA, stats) do stores
-            pct = round((value / stores) * 100.)
+        has_event(L1_TCA, stats) do accesses
+            pct = round((value / accesses) * 100.)
             print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L1 cache refs")
         end
+
+        has_event(LST_INS, stats) do lst
+            pct = round((value / lst) * 100.)
+            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        end
     elseif evt == L2_TCM || evt == L2_TCH
-        has_event(L2_TCA, stats) do stores
-            pct = round((value / stores) * 100.)
+        has_event(L2_TCA, stats) do accesses
+            pct = round((value / accesses) * 100.)
             print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L2 cache refs")
         end
+
+        has_event(LST_INS, stats) do lst
+            pct = round((value / lst) * 100.)
+            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        end
     elseif evt == L3_TCM || evt == L3_TCH
-        has_event(L3_TCA, stats) do stores
-            pct = round((value / stores) * 100.)
+        has_event(L3_TCA, stats) do accesses
+            pct = round((value / accesses) * 100.)
             print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L3 cache refs")
+        end
+
+        has_event(LST_INS, stats) do lst
+            pct = round((value / lst) * 100.)
+            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        end
+    elseif evt == TLB_DM
+        has_event(LST_INS, stats) do lst
+            pct = round((value / lst) * 100.)
+            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
         end
     elseif evt in (FMA_INS, FP_INS, BR_INS, VEC_INS, FAD_INS, SR_INS, LD_INS, INT_INS, LST_INS, SYC_INS, FML_INS, FDV_INS, FSQ_INS, FNV_INS)
         has_event(TOT_INS, stats) do insn
             pct = round((value / insn)*100.)
             print(io, " # $pct% of all instructions")
         end
+    elseif evt in (STL_ICY, FUL_ICY, STL_CCY, FUL_CCY, MEM_SCY, MEM_RCY, MEM_WCY)
+        has_event(TOT_CYC, stats) do cycles
+            pct = round((value / cycles)*100.)
+            print(io, " # $pct% of all cycles")
+        end
     elseif evt == SP_OPS || evt == DP_OPS
         has_event(FP_INS, stats) do insn
             pct = round((value / insn)*100.)
             print(io, " # $pct% of all fp instructions")
         end
+
+        has_event(TOT_INS, stats) do insn
+            pct = round((value / insn)*100.)
+            print(io, " # $pct% of all instructions")
+        end
     elseif evt == VEC_SP || evt == VEC_DP
         has_event(VEC_INS, stats) do insn
             pct = round((value / insn)*100.)
             print(io, " # $pct% of all vec instructions")
+        end
+
+        has_event(TOT_INS, stats) do insn
+            pct = round((value / insn)*100.)
+            print(io, " # $pct% of all instructions")
         end
     elseif evt in (MEM_RCY, MEM_SCY, MEM_WCY, RES_STL)
         has_event(TOT_CYC, stats) do cycles
