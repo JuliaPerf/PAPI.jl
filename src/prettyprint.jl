@@ -161,6 +161,11 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
             pct = percentage(value, insn)
             print(io, " # $pct% of all instructions")
         end
+
+        has_event(evt == SP_OPS ? VEC_SP : VEC_DP, stats) do vec
+            x = ratio(value, vec)
+            print(io, " # $(x)x vectorized")
+        end
     elseif evt == VEC_SP || evt == VEC_DP
         has_event(VEC_INS, stats) do insn
             pct = percentage(value, insn)
