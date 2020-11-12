@@ -18,7 +18,13 @@ EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]))
 
 gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
 
-function profile(f::Function, events::Vector{Event})
+function profile(f::Function, events::Vector{Event}; gcfirst::Bool=false, warmup::Int64=1)
+    gcfirst && gcscrub()
+
+    for i in 1:warmup
+      f()
+    end
+
     stats = EventValues(events)
     start_counters(stats.events)
     try
@@ -64,30 +70,30 @@ end
 
 sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)
 
-macro profile(events, ex)
-    quote
-        profile(() -> $(esc(ex)), Event[$(esc(events))...])
+function kwargs(default_events, ex, args...)
+    events, ex, params = if isa(ex, Symbol) || (isa(ex, Expr) && (ex.head == :tuple || ex.head == :vect))
+      ex, first(args), collect(Iterators.drop(args, 1))
+    else
+      default_events, ex, collect(args)
     end
-end
 
-macro profile(ex)
-    quote
-        profile(() -> $(esc(ex)), [BR_INS, BR_MSP, TOT_INS, TOT_CYC])
-    end
-end
-
-function kwargs(args...)
-    params = collect(args)
     for ex in params
         if isa(ex, Expr) && ex.head == :(=)
             ex.head = :kw
         end
     end
-    params
+    events, ex, params
 end
 
-macro sample(events, ex, args...)
-    params = kwargs(args...)
+macro profile(ex, args...)
+    events, ex, params = kwargs([BR_INS, BR_MSP, TOT_INS, TOT_CYC], ex, args...)
+    quote
+        profile(() -> $(esc(ex)), Event[$(esc(events))...], $(params...))
+    end
+end
+
+macro sample(ex, args...)
+    events, ex, params = kwargs([BR_INS, BR_MSP, TOT_INS, TOT_CYC], ex, args...)
     quote
         sample(() -> $(esc(ex)), Event[$(esc(events))...], $(params...))
     end
