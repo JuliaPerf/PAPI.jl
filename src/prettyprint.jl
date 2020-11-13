@@ -7,6 +7,7 @@ function show(io::IO, ::MIME"text/plain", stats::EventValues)
         print(io, "\n  ", e, " = ", v)
         print_shadow(io, e, v, stats)
     end
+    print(io, "\n  runtime = ", stats.time, " nsecs")
 end
 
 function show(io::IO, stats::EventValues)
@@ -16,6 +17,7 @@ function show(io::IO, stats::EventValues)
             print(io, " ", e, "=", v)
         end
     end
+    print(io, "\n  runtime = ", stats.time, " nsecs")
 end
 
 function show(io::IO, ::MIME"text/plain", stats::EventStats)
@@ -24,6 +26,7 @@ function show(io::IO, ::MIME"text/plain", stats::EventStats)
         print(io, "\n  ", e, " = ", v)
         print_shadow(io, e, v, stats)
     end
+    print(io, "\n  runtime = ", stats.time, " nsecs")
 end
 
 function show(io::IO, stats::EventStats)
@@ -33,6 +36,7 @@ function show(io::IO, stats::EventStats)
             print(io, " ", e, "=", v)
         end
     end
+    print(io, "\n  runtime = ", stats.time, " nsecs")
 end
 
 function has_event(f::Function, evt::Event, stats::EventValues)
@@ -88,6 +92,8 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
             print(io, " # $(ratio(stalled_cycles, value)) stalled cycles per insn")
         end
     elseif evt == TOT_CYC
+        print(io, " # $(ratio(value, stats.time)) Ghz")
+
         has_event(TOT_INS, stats) do cycles
             print(io, " # $(ratio(value, cycles)) cycles per insn")
         end
@@ -146,6 +152,17 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
             pct = percentage(value, insn)
             print(io, " # $pct% of all instructions")
         end
+
+        unit = 'G'
+        r = ratio(value, stats.time)
+        if r < 1e-3
+            unit = 'M'
+            r *= 1e3
+        elseif r < 1e-6
+            unit = 'K'
+            r *= 1e6
+        end
+        print(io, " # $r $unit/sec ")
     elseif evt in (STL_ICY, FUL_ICY, STL_CCY, FUL_CCY, MEM_SCY, MEM_RCY, MEM_WCY)
         has_event(TOT_CYC, stats) do cycles
             pct = percentage(value, cycles)
@@ -190,5 +207,17 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
             end
             print(io, " # $color$pct%$COLOR_RESET of all cycles")
         end
+    else
+        unit = 'G'
+        r = ratio(value, stats.time)
+        if r < 1e-3
+            unit = 'M'
+            r *= 1e3
+        elseif r < 1e-6
+            unit = 'K'
+            r *= 1e6
+        end
+
+        print(io, " # $r $unit/sec ")
     end
 end

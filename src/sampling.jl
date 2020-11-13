@@ -3,18 +3,20 @@ const Counts = Clonglong
 struct EventValues
     events::Vector{Event}
     vals::Vector{Counts}
+    time::Counts
 end
 
-EventValues(events::Event...) = EventValues(events, zeros(Counts, length(events)))
-EventValues(events::NTuple{N, Event}) where N = EventValues(collect(events), zeros(Counts, N))
-EventValues(events::Vector{Event}) = EventValues(events, zeros(Counts, length(events)))
+EventValues(events::Event...) = EventValues(events, zeros(Counts, length(events)), Counts(0))
+EventValues(events::NTuple{N, Event}) where N = EventValues(collect(events), zeros(Counts, N), Counts(0))
+EventValues(events::Vector{Event}) = EventValues(events, zeros(Counts, length(events)), Counts(0))
 
 struct EventStats
     events::Vector{Event}
     samples::Matrix{Counts}
+    time::Vector{Counts}
 end
 
-EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]))
+EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]), Counts(0))
 
 gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
 
@@ -25,15 +27,17 @@ function profile(f::Function, events::Vector{Event}; gcfirst::Bool=false, warmup
       f()
     end
 
-    stats = EventValues(events)
-    start_counters(stats.events)
-    try
+    vals = zeros(Counts, length(events))
+    start_counters(events)
+    time = try
+        local t0 = time_ns()
         f()
+        (time_ns() - t0)
     finally
-        stop_counters!(stats.vals)
+        stop_counters!(vals)
     end
 
-    stats
+    EventValues(events, vals, time)
 end
 
 profile(f::Function, events::NTuple{N, Event}) where N = profile(f, collect(events))
@@ -42,6 +46,7 @@ function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epoch
     num_events = length(events)
     counts = Vector{Counts}(undef, num_events)
     samples = Vector{Counts}[]
+    times = UInt64[]
 
     start_counters(events)
     try
@@ -56,16 +61,19 @@ function sample(f::Function, events::Vector{Event}; max_secs::Int64=5, max_epoch
         while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
             gcsample && gcscrub()
             read_counters!(counts)
+            local t0 = time_ns()
             f()
+            time = (time_ns() - t0)
             read_counters!(counts)
             push!(samples, copy(counts))
+            push!(times, time)
             iters += 1
         end
     finally
         stop_counters!(counts)
     end
 
-    EventStats(events, hcat(samples...)')
+    EventStats(events, hcat(samples...)', times)
 end
 
 sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)
