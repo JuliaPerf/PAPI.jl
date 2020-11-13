@@ -116,7 +116,6 @@ Native(x::Integer) = Base.bitcast(Native, convert(Cuint, x))
 Base.cconvert(::Type{T}, x::Native) where {T<:Integer} = Base.bitcast(T, x)::T
 
 const Event = Union{Preset, Native}
-const EventSet = Vector{Event}
 
 function exists(evt::Event)
 	errcode = ccall((:PAPI_query_event, :libpapi), Cint, (Cuint,), evt)
@@ -127,8 +126,7 @@ function exists(evt::Event)
     return errcode == PAPI_OK
 end
 
-event_to_name(evt::Event) = event_to_name(Base.cconvert(Cuint, evt))
-function event_to_name(evt::Cuint)
+function event_to_name(evt::Event)
 	str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
 	@papichk ccall((:PAPI_event_code_to_name, :libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
 	unsafe_string(pointer(str_buf))
