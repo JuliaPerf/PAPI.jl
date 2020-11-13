@@ -7,6 +7,7 @@ include("counters.jl")
 include("sampling.jl")
 include("prettyprint.jl")
 include("components.jl")
+include("eventsets.jl")
 
 function __init__()
     # init the library and make sure that some counters are available
