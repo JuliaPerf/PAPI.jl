@@ -24,8 +24,7 @@ Get the number of hardware counters available on the system
 
 `PAPI.num_counters()` initializes the PAPI library if necessary.
 
-`PAPI_num_counters()`` returns the optimal length of the values array for the high level functions.
-This value corresponds to the number of hardware counters supported by the current CPU component.
+`PAPI_num_counters()`` returns the number of hardware counters available on the system.
 """
 function num_counters()
     errcode = ccall((:PAPI_num_counters, :libpapi), Cint, ())
@@ -36,7 +35,7 @@ function num_counters()
     end
 end
 
-export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters
+export PAPIError, num_counters, start_counters, read_counters!, accum_counters!, stop_counters, stop_counters!
 export @profile, @sample, sample, profile, name_to_event, event_to_name
-export find_component, exists, available_presets
+export find_component, exists, available_presets, Event, Counts
 end # module

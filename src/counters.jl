@@ -1,3 +1,5 @@
+const Counts = Clonglong
+
 """
 	start_counters(events)
 
@@ -21,35 +23,35 @@ end
 start_counters(evts::Event...) = start_counters(collect(evts))
 
 """
-	read_counters!(values::Vector{Clonglong})
+	read_counters!(values::Vector{Counts})
 
 Read and reset counters.
 ``read_counters!`` copies the event counters into values. The counters are reset and left running after the call.
 """
-function read_counters!(values::Vector{Clonglong})
-	@papichk ccall((:PAPI_read_counters, :libpapi), Cint, (Ptr{Clonglong}, Cint), values, length(values))
+function read_counters!(values::Vector{Counts})
+	@papichk ccall((:PAPI_read_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, length(values))
 	values
 end
 
 """
-	accum_counters!(values::Vector{Clonglong})
+	accum_counters!(values::Vector{Counts})
 
 Accumulate and reset counters.
 ``accum_counters!`` accumulates the event counters into values. The counters are reset and left running after the call.
 """
-function accum_counters!(values::Vector{Clonglong})
-    @papichk ccall((:PAPI_read_counters, :libpapi), Cint, (Ptr{Clonglong}, Cint), values, length(values))
+function accum_counters!(values::Vector{Counts})
+    @papichk ccall((:PAPI_read_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, length(values))
 end
 
 """
-	stop_counters!(values::Vector{Clonglong})
+	stop_counters!(values::Vector{Counts})
 
 Stop counters and return current counts.
 The counters must have been started by a previous call to ``start_counters``
 """
-function stop_counters!(values::Vector{Clonglong})
+function stop_counters!(values::Vector{Counts})
 	numevents = length(values)
-	@papichk ccall((:PAPI_stop_counters, :libpapi), Cint, (Ptr{Cuint}, Cint), values, numevents)
+	@papichk ccall((:PAPI_stop_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, numevents)
 	values
 end
 

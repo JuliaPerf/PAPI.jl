@@ -1,5 +1,3 @@
-const Counts = Clonglong
-
 struct EventValues
     events::Vector{Event}
     vals::Vector{Counts}
