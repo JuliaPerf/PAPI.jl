@@ -66,7 +66,7 @@ Sampling continues until either the maximum number of samples `max_epochs` are c
 
     -`f`: the function to profile
     -`events`: the events to count
-    -`max_secs`:
+    -`max_secs`: maximum number of seconds to sample for
     -`gcsample`: run the gc several times before the execution to reduce gc noise
     -`warmup`: number of times to run the function prior to counting
 
