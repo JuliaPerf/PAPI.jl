@@ -155,7 +155,7 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
 
         unit = 'G'
         r = ratio(value, stats.time)
-        if r < 1e-3
+        if r < 1.
             unit = 'M'
             r *= 1e3
         elseif r < 1e-6
@@ -210,7 +210,7 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
     else
         unit = 'G'
         r = ratio(value, stats.time)
-        if r < 1e-3
+        if r < 1.
             unit = 'M'
             r *= 1e3
         elseif r < 1e-6
