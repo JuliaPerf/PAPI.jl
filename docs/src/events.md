@@ -50,6 +50,7 @@ back to their name with `event_to_name`
 using PAPI #hide
 tot_ins = name_to_event("PAPI_TOT_INS") # Total Instructions preset same as PAPI.TOT_INS
 page_faults = name_to_event("PAGE-FAULTS") # Page-fault counter provided by perf, if available
+tot_cyc = event"PAPI_TOT_CYC" # same, but with macro
 ```
 
 `Base.show` automatically converts the event back to its corresponding name.

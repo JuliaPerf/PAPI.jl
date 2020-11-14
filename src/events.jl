@@ -146,3 +146,7 @@ function Base.show(io::IO, evt::Native)
 end
 
 available_presets() = filter(exists, instances(Preset))
+
+macro event_str(n)
+    name_to_event(n)
+end
