@@ -14,3 +14,7 @@ makedocs(;
         ]
     ]
 )
+
+deploydocs(;
+    repo="github.com/tomhaber/PAPI.jl.git"
+)
