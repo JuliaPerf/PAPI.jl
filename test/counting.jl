@@ -9,9 +9,20 @@ function computation(n::Int64)
 end
 
 @testset "counting" begin
-    events = Event[PAPI.TOT_INS, PAPI.TOT_CYC]
+    events = Event[PAPI.DP_OPS, PAPI.TOT_INS]
     values = Vector{Counts}(undef, length(events))
     start_counters(events)
-    computation(10_000)
-    stop_counters!(values)
+    computation(100) # perform 100 double precision operations
+    read_counters!(values)
+    @test values[1] ≈ 100
+
+    computation(100) # perform 100 double precision operations
+    accum_counters!(values)
+    @test values[1] ≈ 200
+
+    values[1] = -100
+    computation(100) # perform 100 double precision operations
+    accum_counters!(values)
+    @test values[1] ≈ 0
+    stop_counters(events)
 end
