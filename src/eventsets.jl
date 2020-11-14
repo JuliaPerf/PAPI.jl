@@ -21,7 +21,12 @@ function find_group(evt::Event, groups::Vector{EventSet})
         end
     end
 
-    push!(groups, create_eventset())
+    evtset = create_eventset()
+    if ! add_event(evtset, evt)
+        destroy_eventset(evtset)
+        error("failed to add event to empty group")
+    end
+    push!(groups, evtset)
     return length(groups)
 end
 
@@ -29,13 +34,15 @@ function measurement_groups(events::Vector{Event})
     groups = EventSet[]
     assignment = zeros(Int64, size(events))
 
-    @inbounds for (i, evt) in enumerate(events)
-        j = find_group(evt, groups)
-        assignment[i] = j
-    end
-
-    @inbounds for j in 1:length(groups)
-        destroy_eventset(groups[j])
+    try
+        @inbounds for (i, evt) in enumerate(events)
+            j = find_group(evt, groups)
+            assignment[i] = j
+        end
+    finally
+        @inbounds for j in 1:length(groups)
+            destroy_eventset(groups[j])
+        end
     end
 
     assignment
