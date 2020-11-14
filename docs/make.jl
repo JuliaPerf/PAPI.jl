@@ -6,6 +6,7 @@ makedocs(;
     authors = "Tom Haber <tom.haber@uhasselt.be>",
     pages = [
         "Home" => "index.md",
+        "Events" => "events.md",
         "Library" => [
             "Public" => "public.md",
             "Internals" => "internals.md",

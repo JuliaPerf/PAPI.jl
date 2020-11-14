@@ -19,13 +19,36 @@ f() = sum(sin, -1:.1:1)
 @profile f()
 ```
 
+See the [Index](@ref main-index) for the complete list of documented functions and types.
+
 ## Prerequisites
 
 The package assumes that `libPAPI` is available on the system and locatable by Julia.
 
 To install libPAPI on Debian/Ubuntu, you'll need to run
 ```bash
-    sudo apt-get install libpapi-dev
+sudo apt-get install libpapi-dev
+```
+
+## Manual Outline
+
+```@contents
+Pages = [
+    "events.md",
+]
+Depth = 1
+```
+
+## Library Outline
+
+```@contents
+Pages = ["public.md", "internals.md"]
+```
+
+### [Index](@id main-index)
+
+```@index
+Pages = ["public.md"]
 ```
 
 ## Contributing
