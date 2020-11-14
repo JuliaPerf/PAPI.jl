@@ -35,8 +35,9 @@ sudo apt-get install libpapi-dev
 ```@contents
 Pages = [
     "events.md",
+    "counters.md",
 ]
-Depth = 1
+Depth = 2
 ```
 
 ## Library Outline

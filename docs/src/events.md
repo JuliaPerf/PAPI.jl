@@ -7,6 +7,8 @@ Other performance counters might exist on the operating system level for events 
 Monitoring these events facilitates correlation between the structure of source/object code and the efficiency of the mapping of that code to the underlying architecture. Each processor/architecture/system has a number of events that are native to it.
 PAPI provides a software abstraction of these architecture-dependent `native` events into a collection of `preset` events that are accessible through the PAPI interface.
 
+`PAPI.jl` uses the `Event` type to represent both `native` events (`PAPI.Native`) and `preset` events (`PAPI.Preset`).
+
 ## Native events
 
 Native events comprise the set of all events that are countable by the system. In many cases, these events will be available through a matching [preset](#presets) PAPI event. These native events can also be access directly, however this usage is intended for people who are very familiar with the particular platform in use.
