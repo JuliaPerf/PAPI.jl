@@ -74,7 +74,7 @@ Sampling continues until either the maximum number of samples `max_epochs` are c
 
 `EventStats` containing the events, counts and runtime collected
 """
-function sample(f::Function, events::Vector{Event}; max_secs::Float64=5., max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1)
+function sample(f::Function, events::Vector{Event}; max_secs::Real=5., max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1)
     num_events = length(events)
     counts = Vector{Counts}(undef, num_events)
     samples = Vector{Counts}[]
