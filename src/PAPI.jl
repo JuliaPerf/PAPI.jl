@@ -37,6 +37,6 @@ function num_counters()
 end
 
 export PAPIError, num_counters, start_counters, read_counters, accum_counters, stop_counters
-export @profile, @sample, sample, profile, available_presets, name_to_event, event_to_name
-export find_component
+export @profile, @sample, sample, profile, name_to_event, event_to_name
+export find_component, exists, available_presets
 end # module

@@ -133,8 +133,8 @@ function event_to_name(evt::Event)
 end
 
 function name_to_event(name::AbstractString)
-    evt = Ref{Cint}()
-    @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cint}), name, evt)
+    evt = Ref{Cuint}()
+    @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
     Native(evt[])
 end
 
