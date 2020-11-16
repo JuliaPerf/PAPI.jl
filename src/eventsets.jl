@@ -65,7 +65,16 @@ end
 Adds multiple PAPI events to the set. The events can be either a native or preset events.
 """
 function Base.append!(evtset::EventSet, evts::Vector{Event})
-    @papichk ccall((:PAPI_add_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, length(evts))
+    errcode = ccall((:PAPI_add_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, length(evts))
+    if errcode < 0
+        throw(PAPIError(errcode))
+    end
+
+    if errcode != PAPI_OK
+        @papichk ccall((:PAPI_remove_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, errcode)
+        throw(PAPIError(PAPI_ECNFLCT))
+    end
+
     append!(evtset.events, evts)
     evtset
 end
