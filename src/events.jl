@@ -128,12 +128,22 @@ function exists(evt::Event)
     return errcode == PAPI_OK
 end
 
+"""
+    event_to_name(evt::Event)
+
+Converts an event into a name.
+"""
 function event_to_name(evt::Event)
 	str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
 	@papichk ccall((:PAPI_event_code_to_name, :libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
 	unsafe_string(pointer(str_buf))
 end
 
+"""
+    name_to_event(evt::Event)
+
+Converts event name into an event
+"""
 function name_to_event(name::AbstractString)
     evt = Ref{Cuint}()
     @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
@@ -145,6 +155,11 @@ function Base.show(io::IO, evt::Native)
   print(io, name)
 end
 
+"""
+    available_presets()
+
+Returns a list of the presets available on the current platform.
+"""
 available_presets() = filter(exists, instances(Preset))
 
 macro event_str(n)

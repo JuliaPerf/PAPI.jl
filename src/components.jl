@@ -64,6 +64,11 @@ function eachcomponent()
     (Component(i) for i in 0:numcmp-1)
 end
 
+"""
+    available_native()
+
+Returns a list of the native events available on the current platform.
+"""
 function available_native()
     evtset = EventSet()
     function test_event(evt::Event)
