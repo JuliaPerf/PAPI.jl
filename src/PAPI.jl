@@ -12,9 +12,9 @@ end
 include("constants.jl")
 include("error.jl")
 include("events.jl")
+include("eventsets.jl")
 include("counters.jl")
 include("components.jl")
-include("eventsets.jl")
 include("sampling.jl")
 include("prettyprint.jl")
 

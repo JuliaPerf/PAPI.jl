@@ -42,13 +42,13 @@ function profile(f::Function, events::Vector{Event}; gcfirst::Bool=true, warmup:
     end
 
     vals = zeros(Counts, length(events))
-    start_counters(events)
+    evtset = start_counters(events)
     time = try
         local t0 = time_ns()
         f()
         (time_ns() - t0)
     finally
-        stop_counters!(vals)
+        stop_counters!(evtset, vals)
     end
 
     EventValues(events, vals, time)
@@ -80,7 +80,7 @@ function sample(f::Function, events::Vector{Event}; max_secs::Real=5., max_epoch
     samples = Vector{Counts}[]
     times = UInt64[]
 
-    start_counters(events)
+    evtset = start_counters(events)
     try
         gcscrub()
 
@@ -92,17 +92,17 @@ function sample(f::Function, events::Vector{Event}; max_secs::Real=5., max_epoch
         iters = 1
         while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
             gcsample && gcscrub()
-            read_counters!(counts)
+            read_counters!(evtset, counts)
             local t0 = time_ns()
             f()
             time = (time_ns() - t0)
-            read_counters!(counts)
+            read_counters!(evtset, counts)
             push!(samples, copy(counts))
             push!(times, time)
             iters += 1
         end
     finally
-        stop_counters!(counts)
+        stop_counters!(evtset, counts)
     end
 
     EventStats(events, hcat(samples...)', times)
