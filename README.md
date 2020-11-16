@@ -26,6 +26,23 @@ To install libPAPI on Debian/Ubuntu, you'll need to run
 sudo apt-get install libpapi-dev
 ```
 
+## Basic usage
+
+```julia
+using PAPI
+
+function mysum(X::AbstractArray)
+    s = zero(eltype(X))
+    for x in X
+        s += x
+    end
+    s
+end
+
+X = rand(10_000)
+stats = @sample mysum(X)
+```
+
 ## Contributing
 
 Contributions are encouraged. In particular, PAPI provides many components, configurable at compilation time,
