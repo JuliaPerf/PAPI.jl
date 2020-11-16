@@ -1,5 +1,8 @@
 const Counts = Clonglong
 
+ContiguousSubArray{T,N,P,I<:Tuple{Union{Base.Slice, AbstractUnitRange}, Vararg{Any}}} = SubArray{T,N,P,I,true}
+ContiguousArray{T} = Union{Vector{T}, ContiguousSubArray{T}}
+
 """
 	start_counters(events)
 
@@ -41,7 +44,7 @@ Read and reset counters.
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function read_counters!(evtset::EventSet, values::Vector{Counts})
+function read_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
 	@papichk ccall((:PAPI_read, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 	@papichk ccall((:PAPI_reset, :libpapi), Cint, (Cint,), evtset)
@@ -56,7 +59,7 @@ Accumulate and reset counters.
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function accum_counters!(evtset::EventSet, values::Vector{Counts})
+function accum_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
     @papichk ccall((:PAPI_accum, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 end
@@ -69,7 +72,7 @@ The counters must have been started by a previous call to `start_counters`
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function stop_counters!(evtset::EventSet, values::Vector{Counts})
+function stop_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
 	@papichk ccall((:PAPI_stop, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 	values
