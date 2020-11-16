@@ -18,6 +18,26 @@ EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]), 
 
 gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
 
+function run_and_collect!(f::Function, evtsets::Vector{EventSet}, vals::Vector{Counts})
+    last = 0
+
+    time = UInt64(0)
+    for evtset in evtsets
+        first = last + 1
+        last = last + length(evtset)
+
+        start_counters(evtset)
+        time += try
+            local t0 = time_ns()
+            f()
+            (time_ns() - t0)
+        finally
+            stop_counters!(evtset, view(vals, first:last))
+        end
+    end
+    div(time, length(evtsets))
+end
+
 """
     profile(f::Function, events::Vector{Event}; gcfirst::Bool=true, warmup::Int64=0)
 
@@ -34,27 +54,65 @@ Execute the function `f` once while counting specific `events`.
 
 `EventValues` containing the events, counts and runtime collected
 """
-function profile(f::Function, events::Vector{Event}; gcfirst::Bool=true, warmup::Int64=0)
+function profile(f::Function, events::Vector{Event}; gcfirst::Bool=true, warmup::Int64=0, multi::Bool=true)
     gcfirst && gcscrub()
 
     for i in 1:warmup
       f()
     end
 
-    vals = zeros(Counts, length(events))
-    evtset = start_counters(events)
-    time = try
-        local t0 = time_ns()
-        f()
-        (time_ns() - t0)
-    finally
-        stop_counters!(evtset, vals)
+    evtsets = measurement_groups(events)
+    if length(evtsets) != 1 && !multi
+        throw(ArgumentError("cannot profile the events at the same time"))
     end
 
-    EventValues(events, vals, time)
+    vals = zeros(Counts, length(events))
+    time = run_and_collect!(f, evtsets, vals)
+    EventValues(collect_events(evtsets), vals, time)
 end
 
 profile(f::Function, events::NTuple{N, Event}) where N = profile(f, collect(events))
+
+function _sample(f::Function, evtsets::Vector{EventSet}, counts::Vector{Counts}, samples::Vector{Vector{Counts}}, times::Vector{UInt64};
+         max_secs::Real=5., max_epochs::Int64=1000, gcsample::Bool=false)
+
+    start_time = Base.time()
+    iters = 1
+    while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
+        gcsample && gcscrub()
+
+        time = run_and_collect!(f, evtsets, counts)
+
+        push!(samples, copy(counts))
+        push!(times, time)
+        iters += 1
+    end
+end
+
+function _sample(f::Function, evtset::EventSet, counts::Vector{Counts}, samples::Vector{Vector{Counts}}, times::Vector{UInt64};
+         max_secs::Real=5., max_epochs::Int64=1000, gcsample::Bool=false)
+
+    start_counters(evtset)
+    try
+        start_time = Base.time()
+        iters = 1
+        while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
+            gcsample && gcscrub()
+
+            reset_counters!(evtset)
+            local t0 = time_ns()
+            f()
+            time = (time_ns() - t0)
+            read_counters!(evtset, counts)
+
+            push!(samples, copy(counts))
+            push!(times, time)
+            iters += 1
+        end
+    finally
+        stop_counters(evtset)
+    end
+end
 
 """
     sample(f::Function, events::Vector{Event}; max_secs::Float64=5, max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1)
@@ -74,38 +132,29 @@ Sampling continues until either the maximum number of samples `max_epochs` are c
 
 `EventStats` containing the events, counts and runtime collected
 """
-function sample(f::Function, events::Vector{Event}; max_secs::Real=5., max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1)
+function sample(f::Function, events::Vector{Event}; max_secs::Real=5., max_epochs::Int64=1000, gcsample::Bool=false, warmup::Int64=1, multi::Bool=true)
     num_events = length(events)
     counts = Vector{Counts}(undef, num_events)
     samples = Vector{Counts}[]
     times = UInt64[]
 
-    evtset = start_counters(events)
-    try
-        gcscrub()
-
-        for i in 1:warmup
-          f()
-        end
-
-        start_time = Base.time()
-        iters = 1
-        while (Base.time() - start_time) < max_secs && iters ≤ max_epochs
-            gcsample && gcscrub()
-            read_counters!(evtset, counts)
-            local t0 = time_ns()
-            f()
-            time = (time_ns() - t0)
-            read_counters!(evtset, counts)
-            push!(samples, copy(counts))
-            push!(times, time)
-            iters += 1
-        end
-    finally
-        stop_counters!(evtset, counts)
+    evtsets = measurement_groups(events)
+    if length(evtsets) != 1 && !multi
+        throw(ArgumentError("cannot profile the events at the same time"))
     end
 
-    EventStats(events, hcat(samples...)', times)
+    gcscrub()
+
+    for i in 1:warmup
+        f()
+    end
+
+    if length(evtsets) == 1
+        _sample(f, first(evtsets), counts, samples, times; max_secs=max_secs, max_epochs=max_epochs, gcsample=gcsample)
+    else
+        _sample(f, evtsets, counts, samples, times; max_secs=max_secs, max_epochs=max_epochs, gcsample=gcsample)
+    end
+    EventStats(collect_events(evtsets), hcat(samples...)', times)
 end
 
 sample(f::Function, events::NTuple{N, Event}; kw...) where N = sample(f, collect(events); kw...)

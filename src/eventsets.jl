@@ -155,3 +155,26 @@ function measurement_groups(events::Vector{Event})
 
     groups
 end
+
+"""
+    collect_events(evtsets::Vector{EventSet})
+
+Collect the event in the groups in order
+"""
+function collect_events(evtsets::Vector{EventSet})
+    if length(evtsets) == 1
+        evtsets[1].events
+    else
+        num_events = sum(length, evtsets)
+        events = Vector{Event}(undef, num_events)
+
+        last = 0
+        for evtset in evtsets
+            first = last + 1
+            last = last + length(evtset)
+            events[first:last] = evtset.events
+        end
+
+        events
+    end
+end
