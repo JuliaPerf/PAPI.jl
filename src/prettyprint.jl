@@ -1,6 +1,34 @@
 import Statistics: mean
 
 import Base: show, IO
+function show_events_array(io::IO, v::Vector{Event}, i1=1, l=length(v))
+    i = i1
+    if l >= i
+        while true
+            show(io, v[i])
+            i += 1
+            i > l && break
+
+            print(io, ", ")
+        end
+    end
+end
+
+function show(io::IO, evtset::EventSet)
+    limited = get(io, :limit, false)::Bool
+
+    print(io, "EventSet: [")
+    if limited && length(evtset) > 20
+        f, l = 1, length(evtset)
+        show_events_array(io, evtset.events, f, f+9)
+        print(io, "  …  ")
+        show_events_array(io, evtset.events, l-9, l)
+    else
+        show_events_array(io, evtset.events)
+    end
+    print(io, "]")
+end
+
 function show(io::IO, ::MIME"text/plain", stats::EventValues)
     print(io, "EventValues:")
     for (e,v) in zip(stats.events, stats.vals)
