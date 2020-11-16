@@ -31,6 +31,11 @@ function Base.unsafe_convert(::Type{Ptr{Cint}}, evtset::EventSet)
     convert(Ptr{Cint}, pointer_from_objref(evtset))
 end
 
+"""
+    try_add_event(evtset::EventSet, evt::Event)
+
+Tries to add the event `evt` to the set. Returns success or not.
+"""
 function try_add_event(evtset::EventSet, evt::Event)
     success = ccall((:PAPI_add_event, :libpapi), Cint, (Cint, Cuint), evtset, evt) == PAPI_OK
     if success
@@ -126,6 +131,12 @@ function find_add_group!(evt::Event, groups::Vector{EventSet})
     last(groups)
 end
 
+"""
+    measurement_groups(events::Vector{Event})
+
+Split the list of events into subsets that can be counted at the same time.
+A greedy algorithm is used, so the subsets might not be optimal. The subsets computed depends on the order of the events.
+"""
 function measurement_groups(events::Vector{Event})
     groups = EventSet[]
 
