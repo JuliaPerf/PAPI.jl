@@ -5,8 +5,8 @@ const Counts = Clonglong
 
 Start counting hardware events.  This function cannot be called if the counters have already been started.
 """
-function start_counters(evts::Vector{Event})
-    nevts = length(evts)
+function start_counters(evtset::EventSet)
+    nevts = length(evtset)
     if nevts == 0
         throw(ArgumentError("one or more PAPI.Events required"))
 	end
@@ -16,59 +16,73 @@ function start_counters(evts::Vector{Event})
         throw(ArgumentError("number of PAPI.Events must be ≤ PAPI.num_counters(), got $nevts"))
 	end
 
-    @papichk ccall((:PAPI_start_counters, :libpapi), Cint, (Ptr{Cuint}, Cint), evts, nevts)
-    return
+    @papichk ccall((:PAPI_start, :libpapi), Cint, (Cint, ), evtset)
+    evtset
 end
 
-start_counters(evts::Event...) = start_counters(collect(evts))
+start_counters(evts::Vector{Event}) = start_counters(EventSet(evts))
+start_counters(evts::Event...) = start_counters(collect(Event, evts))
 
 """
-	read_counters!(values::Vector{Counts})
+	reset_counters!(evtset::EventSet)
+
+Reset counters and leaves them running after the call.
+"""
+function reset_counters!(evtset::EventSet)
+	@papichk ccall((:PAPI_reset, :libpapi), Cint, (Cint,), evtset)
+	evtset
+end
+
+"""
+	read_counters!(evtset::EventSet, values::Vector{Counts})
 
 Read and reset counters.
 `read_counters!` copies the event counters into values. The counters are reset and left running after the call.
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function read_counters!(values::Vector{Counts})
-	@papichk ccall((:PAPI_read_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, length(values))
+function read_counters!(evtset::EventSet, values::Vector{Counts})
+	@assert length(evtset) == length(values)
+	@papichk ccall((:PAPI_read, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
+	@papichk ccall((:PAPI_reset, :libpapi), Cint, (Cint,), evtset)
 	values
 end
 
 """
-	accum_counters!(values::Vector{Counts})
+	accum_counters!(evtset::EventSet, values::Vector{Counts})
 
 Accumulate and reset counters.
 `accum_counters!` accumulates the event counters into values. The counters are reset and left running after the call.
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function accum_counters!(values::Vector{Counts})
-    @papichk ccall((:PAPI_accum_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, length(values))
+function accum_counters!(evtset::EventSet, values::Vector{Counts})
+	@assert length(evtset) == length(values)
+    @papichk ccall((:PAPI_accum, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 end
 
 """
-	stop_counters!(values::Vector{Counts})
+	stop_counters!(evtset::EventSet, values::Vector{Counts})
 
 Stop counters and return current counts.
 The counters must have been started by a previous call to `start_counters`
 
 The user must provide a vector of the correct size (equal to the number of events)
 """
-function stop_counters!(values::Vector{Counts})
-	numevents = length(values)
-	@papichk ccall((:PAPI_stop_counters, :libpapi), Cint, (Ptr{Counts}, Cint), values, numevents)
+function stop_counters!(evtset::EventSet, values::Vector{Counts})
+	@assert length(evtset) == length(values)
+	@papichk ccall((:PAPI_stop, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 	values
 end
 
 """
-	stop_counters(evts::Vector{Event})
+	stop_counters(evtset::EventSet)
 
 Stop counters and returns counts
 The counters must have been started by a previous call to `start_counters`
 """
-function stop_counters(evts::Vector{Event})
-	values = Vector{Counts}(undef, length(evts))
-	stop_counters!(values)
+function stop_counters(evtset::EventSet)
+	values = Vector{Counts}(undef, length(evtset))
+	stop_counters!(evtset, values)
 end
 

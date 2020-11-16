@@ -176,9 +176,9 @@ stop_counters!
 using PAPI #hide
 computation(n::Int64 = 10_000) = (tmp = 0.; for i = 1:n tmp += i end; tmp) #hide
 events = Event[PAPI.TOT_INS, PAPI.DP_OPS]
-start_counters(events)
+evtset = start_counters(events)
 computation()
-values = stop_counters(events)
+values = stop_counters(evtset)
 ```
 
 During the counting process, the current counts can be queried and accumulated using `read_counters!` and `accum_counters!`.
@@ -191,18 +191,18 @@ accum_counters!
 ```@example counting
 events = Event[PAPI.DP_OPS]
 values = Vector{Counts}(undef, length(events))
-start_counters(events)
+evtset = start_counters(events)
 computation(100) # perform 100 double precision operations
-read_counters!(values)
+read_counters!(evtset, values)
 println(values[1], " roughly equals 100")
 
 computation(100) # perform 100 double precision operations
-accum_counters!(values)
+accum_counters!(evtset, values)
 println(values[1], " roughly equals 200")
 
 values[1] = -100
 computation(100) # perform 100 double precision operations
-accum_counters!(values)
+accum_counters!(evtset, values)
 println(values[1], " roughly equals 0")
-stop_counters(events); nothing
+stop_counters(evtset); nothing
 ```

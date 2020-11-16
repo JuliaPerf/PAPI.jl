@@ -59,3 +59,35 @@ function list_components()
     end
 end
 
+function eachcomponent()
+    numcmp = ccall((:PAPI_num_components, :libpapi), Cint, ())
+    (Component(i) for i in 0:numcmp-1)
+end
+
+"""
+    available_native()
+
+Returns a list of the native events available on the current platform.
+"""
+function available_native()
+    evtset = EventSet()
+    function test_event(evt::Event)
+        if try_add_event(evtset, evt)
+            delete!(evtset, evt)
+            true
+        else
+            false
+        end
+    end
+
+    events = Event[]
+    for c in eachcomponent()
+        for evt in c
+            if test_event(evt)
+                push!(events, evt)
+            end
+        end
+    end
+
+    events
+end

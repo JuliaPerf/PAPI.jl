@@ -35,6 +35,7 @@ sudo apt-get install libpapi-dev
 ```@contents
 Pages = [
     "events.md",
+    "eventsets.md",
     "counters.md",
 ]
 Depth = 2
@@ -49,7 +50,6 @@ Pages = ["public.md", "internals.md"]
 ### [Index](@id main-index)
 
 ```@index
-Pages = ["public.md"]
 ```
 
 ## Contributing

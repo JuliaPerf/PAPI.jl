@@ -11,18 +11,20 @@ end
 @testset "counting" begin
     events = Event[PAPI.DP_OPS, PAPI.TOT_INS]
     values = Vector{Counts}(undef, length(events))
-    start_counters(events)
+
+    evtset = start_counters(events)
     computation(100) # perform 100 double precision operations
-    read_counters!(values)
+    read_counters!(evtset, values)
     @test values[1] ≈ 100
 
     computation(100) # perform 100 double precision operations
-    accum_counters!(values)
+    accum_counters!(evtset, values)
     @test values[1] ≈ 200
 
     values[1] = -100
     computation(100) # perform 100 double precision operations
-    accum_counters!(values)
+    accum_counters!(evtset, values)
     @test values[1] ≈ 0
-    stop_counters(events)
+
+    stop_counters(evtset)
 end
