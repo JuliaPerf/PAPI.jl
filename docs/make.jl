@@ -7,6 +7,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Events" => "events.md",
+        "Event Sets" => "eventsets.md",
         "Counting" => "counters.md",
         "Library" => [
             "Public" => "public.md",

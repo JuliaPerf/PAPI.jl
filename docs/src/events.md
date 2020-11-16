@@ -54,3 +54,12 @@ tot_cyc = event"PAPI_TOT_CYC" # same, but with macro
 ```
 
 `Base.show` automatically converts the event back to its corresponding name.
+
+## Available events
+
+A full list of available events is provided by `available_presets` and `available_native` for presets and native events respectively.
+
+```@docs
+available_presets
+available_native
+```
