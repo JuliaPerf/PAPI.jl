@@ -63,6 +63,11 @@ function huge_page_size_in_bytes()
     end
 end
 
+function parse_node(descr::AbstractString)
+    node, pages = split(descr, '=')
+    parse(Int64, node[2:end]), parse(Int64, pages)
+end
+
 function numastat(pid::Int32=getpid())
     categories = ["huge", "heap", "stack", "N"]
 
@@ -87,11 +92,10 @@ function numastat(pid::Int32=getpid())
 
                 # per-node page quantity
                 if p[1] == 'N'
-                    node, pages = split(p, '=')
-                    node_num = parse(Int64, node[2:end])
+                    node, pages = parse_node(p)
 
                     multiplier = category == 1 ? huge_page_size : default_page_size
-                    mbytes = parse(Int64, pages) * multiplier / MBytes
+                    mbytes = pages * multiplier / MBytes
 
                     vals = get(table, node_num, NT((0.0, 0.0, 0.0, 0.0, 0.0)))
                     table[node_num] = NT((vals[1] + (category == 1 ? mbytes : 0.),
@@ -106,6 +110,46 @@ function numastat(pid::Int32=getpid())
         table
     end
 end
+
+function find_numa_mapping(ptr::UInt64, pid::Int32=getpid())
+    default_page_size = page_size_bytes()
+    huge_page_size = huge_page_size_in_bytes()
+
+    numa_maps = "/proc/$pid/numa_maps"
+    line = open(numa_maps) do io
+        prev = nothing
+        for line in eachline(io)
+            parts = split(line; limit=2)
+            address = parse(UInt64, parts[1], base=16)
+            address > ptr && break
+            prev = line
+        end
+        return prev
+    end
+
+    if line === nothing
+        error("mapping for $ptr not found")
+    end
+
+    parts = split(line)
+    offset = ptr - parse(UInt64, parts[1], base=16)
+    nodepages = map(parse_node, filter(startswith("N"), parts))
+
+    multiplier = if "huge" in parts
+        huge_page_size
+    else
+        default_page_size
+    end
+
+    pages = sum(last, nodepages)
+    bytes = pages * multiplier
+    @assert offset < bytes
+
+    Dict(((n, p*multiplier/MBytes) for (n,p) in nodepages))
+end
+
+find_numa_mapping(ptr::Ptr) = find_numa_mapping(convert(UInt64, ptr))
+find_numa_mapping(a::AbstractArray) = find_numa_mapping(pointer(a))
 
 function numaprofile(f::Function; gcfirst::Bool=true, warmup::Int64=0)
     node_stores = event"node-stores"
