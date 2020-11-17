@@ -143,32 +143,56 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
     elseif evt == L1_TCM || evt == L1_TCH
         has_event(L1_TCA, stats) do accesses
             pct = percentage(value, accesses)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L1 cache refs")
+            color = pct_color(evt == L1_TCM ? pct : 1.0 - pct)
+            print(io, " # $color$pct%$COLOR_RESET of all L1 cache refs")
+        end
+    elseif evt == L1_DCM || evt == L1_DCA || evt == L1_DCW || evt == L1_DCR
+        has_event(L1_TCA, stats) do accesses
+            pct = percentage(value, accesses)
+            print(io, " # $pct% of all L1 cache refs")
         end
 
-        has_event(LST_INS, stats) do lst
-            pct = percentage(value, lst)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        if evt == L1_DCM
+            has_event(L1_DCA, stats) do accesses
+                pct = percentage(value, accesses)
+                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L1 cache refs")
+            end
         end
     elseif evt == L2_TCM || evt == L2_TCH
         has_event(L2_TCA, stats) do accesses
             pct = percentage(value, accesses)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L2 cache refs")
+            color = pct_color(evt == L2_TCM ? pct : 1.0 - pct)
+            print(io, " # $color$pct%$COLOR_RESET of all L2 cache refs")
+        end
+    elseif evt == L2_DCM || evt == L2_DCA || evt == L2_DCW || evt == L2_DCR
+        has_event(L2_TCA, stats) do accesses
+            pct = percentage(value, accesses)
+            print(io, " # $pct% of all L2 cache refs")
         end
 
-        has_event(LST_INS, stats) do lst
-            pct = percentage(value, lst)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        if evt == L2_DCM
+            has_event(L2_DCA, stats) do accesses
+                pct = percentage(value, accesses)
+                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L2 cache refs")
+            end
         end
     elseif evt == L3_TCM || evt == L3_TCH
         has_event(L3_TCA, stats) do accesses
             pct = percentage(value, accesses)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all L3 cache refs")
+            color = pct_color(evt == L3_TCM ? pct : 1.0 - pct)
+            print(io, " # $color$pct%$COLOR_RESET of all L3 cache refs")
+        end
+    elseif evt == L3_DCM || evt == L3_DCA || evt == L3_DCW || evt == L3_DCR
+        has_event(L3_TCA, stats) do accesses
+            pct = percentage(value, accesses)
+            print(io, " # $pct% of all L3 cache refs")
         end
 
-        has_event(LST_INS, stats) do lst
-            pct = percentage(value, lst)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+        if evt == L3_DCM
+            has_event(L3_DCA, stats) do accesses
+                pct = percentage(value, accesses)
+                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L3 cache refs")
+            end
         end
     elseif evt == TLB_DM
         has_event(LST_INS, stats) do lst
@@ -247,5 +271,12 @@ function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Co
         end
 
         print(io, " # $r $unit/sec ")
+    end
+
+    if evt in (L1_DCM, L1_DCA, L1_DCW, L1_DCR, L2_DCM, L2_DCA, L2_DCW, L2_DCR, L3_DCM, L3_DCA, L3_DCW, L3_DCR)
+        has_event(LST_INS, stats) do lst
+            pct = percentage(value, lst)
+            print(io, " # $pct of all load/stores")
+        end
     end
 end
