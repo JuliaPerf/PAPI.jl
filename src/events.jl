@@ -163,5 +163,5 @@ Returns a list of the presets available on the current platform.
 available_presets() = filter(exists, instances(Preset))
 
 macro event_str(n)
-    name_to_event(n)
+    quote name_to_event($n) end
 end
