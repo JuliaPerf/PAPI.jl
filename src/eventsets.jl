@@ -9,12 +9,12 @@ mutable struct EventSet
 
     function EventSet()
         evtset = new(PAPI_NULL, Event[])
-        @papichk ccall((:PAPI_create_eventset, :libpapi), Cint, (Ptr{Cint},), evtset)
+        @papichk ccall((:PAPI_create_eventset, libpapi), Cint, (Ptr{Cint},), evtset)
         REFCOUNT[] += 1
 
         finalizer(evtset) do x
-            @papichk ccall((:PAPI_cleanup_eventset, :libpapi), Cint, (Cint,), evtset)
-            @papichk ccall((:PAPI_destroy_eventset, :libpapi), Cint, (Ptr{Cint},), evtset)
+            @papichk ccall((:PAPI_cleanup_eventset, libpapi), Cint, (Cint,), evtset)
+            @papichk ccall((:PAPI_destroy_eventset, libpapi), Cint, (Ptr{Cint},), evtset)
             deref_shutdown()
         end
         evtset
@@ -37,7 +37,7 @@ end
 Tries to add the event `evt` to the set. Returns success or not.
 """
 function try_add_event(evtset::EventSet, evt::Event)
-    success = ccall((:PAPI_add_event, :libpapi), Cint, (Cint, Cuint), evtset, evt) == PAPI_OK
+    success = ccall((:PAPI_add_event, libpapi), Cint, (Cint, Cuint), evtset, evt) == PAPI_OK
     if success
         push!(evtset.events, evt)
     end
@@ -54,7 +54,7 @@ Base.iterate(evtset::EventSet, i=1) = iterate(evtset.events, i)
 Adds one PAPI event to the set. The event can be either a native or preset event.
 """
 function Base.push!(evtset::EventSet, evt::Event)
-    @papichk ccall((:PAPI_add_event, :libpapi), Cint, (Cint, Cuint), evtset, evt)
+    @papichk ccall((:PAPI_add_event, libpapi), Cint, (Cint, Cuint), evtset, evt)
     push!(evtset.events, evt)
     evtset
 end
@@ -65,13 +65,13 @@ end
 Adds multiple PAPI events to the set. The events can be either a native or preset events.
 """
 function Base.append!(evtset::EventSet, evts::Vector{Event})
-    errcode = ccall((:PAPI_add_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, length(evts))
+    errcode = ccall((:PAPI_add_events, libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, length(evts))
     if errcode < 0
         throw(PAPIError(errcode))
     end
 
     if errcode != PAPI_OK
-        @papichk ccall((:PAPI_remove_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, errcode)
+        @papichk ccall((:PAPI_remove_events, libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, errcode)
         throw(PAPIError(PAPI_ECNFLCT))
     end
 
@@ -95,7 +95,7 @@ end
 Remove a PAPI events from the set. The event should have previously been added using `push!` or `append!`.
 """
 function Base.delete!(evtset::EventSet, evt::Event)
-    @papichk ccall((:PAPI_remove_event, :libpapi), Cint, (Cint, Cuint), evtset, evt)
+    @papichk ccall((:PAPI_remove_event, libpapi), Cint, (Cint, Cuint), evtset, evt)
     remove!(evtset.events, evt)
     evtset
 end
@@ -106,7 +106,7 @@ end
 Remove all PAPI events from the set.
 """
 function Base.empty!(evtset::EventSet)
-    @papichk ccall((:PAPI_remove_events, :libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evtset.events, length(evtset))
+    @papichk ccall((:PAPI_remove_events, libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evtset.events, length(evtset))
     empty!(evtset.events)
     evtset
 end

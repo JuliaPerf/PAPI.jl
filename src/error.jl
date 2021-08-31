@@ -3,7 +3,7 @@ struct PAPIError <: Exception
 end
 
 function PAPIError(code::Cint)
-	str = ccall((:PAPI_strerror, :libpapi), Cstring, (Cint,), code)
+	str = ccall((:PAPI_strerror, libpapi), Cstring, (Cint,), code)
 	msg = if str == C_NULL
 		"Unknown error code $code"
 	else

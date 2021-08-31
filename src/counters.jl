@@ -19,7 +19,7 @@ function start_counters(evtset::EventSet)
         throw(ArgumentError("number of PAPI.Events must be ≤ PAPI.num_counters(), got $nevts"))
 	end
 
-    @papichk ccall((:PAPI_start, :libpapi), Cint, (Cint, ), evtset)
+    @papichk ccall((:PAPI_start, libpapi), Cint, (Cint, ), evtset)
     evtset
 end
 
@@ -32,7 +32,7 @@ start_counters(evts::Event...) = start_counters(collect(Event, evts))
 Reset counters and leaves them running after the call.
 """
 function reset_counters!(evtset::EventSet)
-	@papichk ccall((:PAPI_reset, :libpapi), Cint, (Cint,), evtset)
+	@papichk ccall((:PAPI_reset, libpapi), Cint, (Cint,), evtset)
 	evtset
 end
 
@@ -46,8 +46,8 @@ The user must provide a vector of the correct size (equal to the number of event
 """
 function read_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
-	@papichk ccall((:PAPI_read, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
-	@papichk ccall((:PAPI_reset, :libpapi), Cint, (Cint,), evtset)
+	@papichk ccall((:PAPI_read, libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
+	@papichk ccall((:PAPI_reset, libpapi), Cint, (Cint,), evtset)
 	values
 end
 
@@ -61,7 +61,8 @@ The user must provide a vector of the correct size (equal to the number of event
 """
 function accum_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
-    @papichk ccall((:PAPI_accum, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
+  @papichk ccall((:PAPI_accum, libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
+  values
 end
 
 """
@@ -74,7 +75,7 @@ The user must provide a vector of the correct size (equal to the number of event
 """
 function stop_counters!(evtset::EventSet, values::ContiguousArray{Counts})
 	@assert length(evtset) == length(values)
-	@papichk ccall((:PAPI_stop, :libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
+	@papichk ccall((:PAPI_stop, libpapi), Cint, (Cint, Ptr{Counts}), evtset, values)
 	values
 end
 

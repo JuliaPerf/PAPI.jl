@@ -15,6 +15,31 @@ const MPOL_MF_STRICT   = Cint(1)
 const MPOL_MF_MOVE     = Cint(2)
 const MPOL_MF_MOVE_ALL = Cint(4)
 
+const MPOL_F_NODE      = Cint(1)
+const MPOL_F_ADDR      = Cint(2)
+
+function get_mempolicy(ptr::Ptr)
+  mode = Ref(~Culong(0))
+  nodemask = Ref{Culong}(1 << nodeid)
+  ret = ccall((:get_mempolicy, libnuma), Cint, (Ptr{Cvoid}, Ptr{Culong}, Culong, Culong, Culong),
+              mode, nodemask, sizeof(Culong)*8, ptr, MPOL_F_ADDR)
+  systemerror("get_mempolicy failed", ret == -1)
+
+  mode[], nodemask[]
+end
+
+function mcurrent_node(ptr::Ptr{T}) where {T}
+  page_size = page_size_bytes()
+  ptr = reinterpret(Ptr{T}, reinterpret(UInt, ptr) & ~(page_size-1))
+  pages = [ptr]
+
+  status = Ref{Cint}(-1)
+  ret = ccall((:move_pages, libnuma), Clong, (Cint, Culong, Ptr{Ptr{Cvoid}}, Ptr{Cint}, Ptr{Cint}, Cint),
+              0, 1, pages, C_NULL, status, 0)
+  systemerror("move_pages failed", ret == -1)
+  status
+end
+
 function mmap_mbind(::Type{Array{T,N}}, dims::NTuple{N, Integer}, nodeid::Int64) where {T,N}
     size = prod(dims) * sizeof(T)
     size >= 0 || throw(ArgumentError("size should be >= 0, but $size"))
@@ -27,7 +52,7 @@ function mmap_mbind(::Type{Array{T,N}}, dims::NTuple{N, Integer}, nodeid::Int64)
 
     try
         nodemask = Ref{Culong}(1 << nodeid)
-        ret = ccall((:mbind, :libnuma), Clong, (Ptr{Cvoid}, Culong, Cint, Ptr{Culong}, Culong, Cuint),
+        ret = ccall((:mbind, libnuma), Clong, (Ptr{Cvoid}, Culong, Cint, Ptr{Culong}, Culong, Cuint),
                 ptr, size, MPOL_BIND, nodemask, sizeof(Culong)*8, MPOL_MF_MOVE)
         systemerror("mbind failed", ret == -1)
     catch

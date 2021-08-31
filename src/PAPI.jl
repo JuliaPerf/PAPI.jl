@@ -1,11 +1,14 @@
 module PAPI
 
+using PAPI_jll
+using NUMA_jll
+
 const REFCOUNT = Ref(zero(UInt))
 function deref_shutdown()
     REFCOUNT[] -= 1
     if REFCOUNT[] == 0
         # no objects to be finalized
-        ccall((:PAPI_shutdown, :libpapi), Cvoid, ())
+        ccall((:PAPI_shutdown, libpapi), Cvoid, ())
     end
 end
 
@@ -20,10 +23,23 @@ include("prettyprint.jl")
 include("numa.jl")
 
 function __init__()
+    version = v"6.0.0"
+    papi_current_version = (version.major << 24)
+
     # init the library and make sure that some counters are available
+    rv = ccall((:PAPI_library_init, libpapi), Cint, (Cint,), papi_current_version)
+    if rv != papi_current_version
+      if rv > 0
+        error("PAPI library version mismatch!")
+      else
+        throw(PAPIError(rv))
+      end
+    end
+
     if num_counters() == 0
         error("PAPI init error: No counters are available on the current system")
     end
+
     REFCOUNT[] += 1
     atexit(deref_shutdown)
 end
@@ -36,7 +52,7 @@ Get the number of hardware counters available on the system
 `PAPI_num_counters()`` returns the number of hardware counters available on the system.
 """
 function num_counters()
-    errcode = ccall((:PAPI_num_counters, :libpapi), Cint, ())
+    errcode = ccall((:PAPI_num_hwctrs, libpapi), Cint, ())
     if errcode < 0
         throw(PAPIError(errcode))
     else

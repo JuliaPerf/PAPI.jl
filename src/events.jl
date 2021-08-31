@@ -120,7 +120,7 @@ const Event = Union{Preset, Native}
 Base.promote_rule(::Type{Native}, ::Type{Preset}) = Event
 
 function exists(evt::Event)
-	errcode = ccall((:PAPI_query_event, :libpapi), Cint, (Cuint,), evt)
+	errcode = ccall((:PAPI_query_event, libpapi), Cint, (Cuint,), evt)
 	if errcode != PAPI_OK && errcode != PAPI_ENOEVNT
 		throw(PAPIError(errcode))
 	end
@@ -135,7 +135,7 @@ Converts an event into a name.
 """
 function event_to_name(evt::Event)
 	str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
-	@papichk ccall((:PAPI_event_code_to_name, :libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
+	@papichk ccall((:PAPI_event_code_to_name, libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
 	unsafe_string(pointer(str_buf))
 end
 
@@ -146,7 +146,7 @@ Converts event name into an event
 """
 function name_to_event(name::AbstractString)
     evt = Ref{Cuint}()
-    @papichk ccall((:PAPI_event_name_to_code, :libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
+    @papichk ccall((:PAPI_event_name_to_code, libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
     Native(evt[])
 end
 
