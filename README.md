@@ -19,11 +19,11 @@ Please see the [documentation](https://tomhaber.github.io/PAPI.jl/stable/) for i
 
 ## Prerequisites
 
-The package assumes that `libPAPI` is available on the system and locatable by Julia.
+The package depends on `PAPI_jll` which is available from https://github.com/tomhaber/PAPI_jll.jl.
 
-To install libPAPI on Debian/Ubuntu, you'll need to run
-```bash
-sudo apt-get install libpapi-dev
+To install PAPI_jll, you'll need to run
+```julia
+import Pkg; Pkg.add("https://github.com/tomhaber/PAPI_jll.jl")
 ```
 
 ## Basic usage
