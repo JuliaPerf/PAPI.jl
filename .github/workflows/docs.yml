@@ -1,0 +1,33 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.6'
+      - uses: actions/cache@v1
+        env:
+          cache-name: cache-artifacts
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ runner.os }}-test-
+            ${{ runner.os }}-          
+      - name: Install dependencies
+        run: julia --project=docs/ -e 'using Pkg; Pkg.add(url="https://github.com/tomhaber/PAPI_jll.jl"); Pkg.add(["Documenter"]); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build("PAPI")'
+      - name: Build and deploy
+        env:
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs/ docs/make.jl
