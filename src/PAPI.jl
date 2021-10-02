@@ -1,7 +1,12 @@
 module PAPI
 
-using PAPI_jll
 using NUMA_jll
+
+try
+    include(joinpath(dirname(@__DIR__), "deps","deps.jl"))
+catch e
+    error("PAPI.jl not properly configured, please run `Pkg.build(\"PAPI\")`.")
+end
 
 const REFCOUNT = Ref(zero(UInt))
 function deref_shutdown()
@@ -23,8 +28,7 @@ include("prettyprint.jl")
 include("numa.jl")
 
 function __init__()
-    version = v"6.0.0"
-    papi_current_version = (version.major << 24)
+    papi_current_version = (papi_version.major << 24) | (papi_version.minor << 16)
 
     # init the library and make sure that some counters are available
     rv = ccall((:PAPI_library_init, libpapi), Cint, (Cint,), papi_current_version)
