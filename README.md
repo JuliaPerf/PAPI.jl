@@ -15,16 +15,27 @@ programming interfaces across platforms, PAPI attempts:
 This package provides access to the functionality of `libPAPI`, but also builds more high-level functions on top of it.
 Its goal is to implement useful primitives that developers can easily understand and use. For example,
 
+```julia
+@profile sum(X)
+@sample sum(X)
+```
+
 Please see the [documentation](https://tomhaber.github.io/PAPI.jl/stable/) for instructions and examples.
 
 ## Prerequisites
 
-The package depends on `PAPI_jll` which is available from https://github.com/tomhaber/PAPI_jll.jl.
+The package depends on `libPAPI` which can either be installed the system (recommended) or from `PAPI_jll` (default) which is available from https://github.com/tomhaber/PAPI_jll.jl.
 
 To install PAPI_jll, you'll need to run
 ```julia
 import Pkg; Pkg.add("https://github.com/tomhaber/PAPI_jll.jl")
 ```
+
+To use the system's libPAPI, you'll need to build PAPI.jl as follows
+```bash
+JULIA_PAPI_BINARY=system julia -e 'import Pkg; Pkg.build()'
+```
+This will try to locate libPAPI on the system. Additional hint can be given using: JULIA_PAPI_LIBRARY and JULIA_PAPI_PATH environment variables.
 
 ## Basic usage
 
@@ -40,7 +51,7 @@ function mysum(X::AbstractArray)
 end
 
 X = rand(10_000)
-stats = @sample mysum(X)
+stats = @profile mysum(X)
 ```
 
 ## Contributing
