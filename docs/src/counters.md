@@ -7,7 +7,7 @@
 
 ## Measuring Performance
 
-`PAPI,jl` provides two ways of measuring performance counters:
+`PAPI.jl` provides two ways of measuring performance counters:
 
 - Quick, one shot `profile`
 - Extensive `sample` based
@@ -35,8 +35,8 @@ the distributions of the counts and to perform various statistical tests.
     as well as "eyeball" statistics. Statistical tests such as a [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test),
     [wilcoxon](https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test) can be used.
 
-    Personally, I'm also wary towards any asymptotical tests putting strong assumptions on the distributions. For example,
-    performance numbers (even runtime) are not always normal distributed: the process is usually skewed towards one side.
+    Personally, I'm also wary towards any asymptotical tests putting strong assumptions on the distributions (such as the t-test).
+    For example, performance numbers (even runtime) are not always normal distributed: the process is usually skewed towards one side.
     I tend to use the samples themselves as well as their quantiles.
 
 ```@docs
