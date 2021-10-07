@@ -24,7 +24,7 @@ Please see the [documentation](https://tomhaber.github.io/PAPI.jl/stable/) for i
 
 ## Prerequisites
 
-The package depends on `libPAPI` which can either be installed the system (recommended) or from `PAPI_jll` (default) which is available from https://github.com/tomhaber/PAPI_jll.jl.
+The package depends on `libPAPI` which can either be installed on the system (recommended) or from `PAPI_jll` (default) which is available from https://github.com/tomhaber/PAPI_jll.jl.
 
 To install PAPI_jll, you'll need to run
 ```julia
@@ -35,7 +35,7 @@ To use the system's libPAPI, you'll need to build PAPI.jl as follows
 ```bash
 JULIA_PAPI_BINARY=system julia -e 'import Pkg; Pkg.build()'
 ```
-This will try to locate libPAPI on the system. Additional hint can be given using: JULIA_PAPI_LIBRARY and JULIA_PAPI_PATH environment variables.
+This will try to locate libPAPI on the system. Additional hints can be given using: `JULIA_PAPI_LIBRARY` and `JULIA_PAPI_PATH` environment variables.
 
 ## Basic usage
 

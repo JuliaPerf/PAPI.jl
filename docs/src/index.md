@@ -34,7 +34,7 @@ To use the system's libPAPI, you'll need to build PAPI.jl as follows
 ```bash
 JULIA_PAPI_BINARY=system julia -e 'import Pkg; Pkg.build()'
 ```
-This will try to locate libPAPI on the system. Additional hint can be given using: JULIA_PAPI_LIBRARY and JULIA_PAPI_PATH environment variables.
+This will try to locate libPAPI on the system. Additional hints can be given using: `JULIA_PAPI_LIBRARY` and `JULIA_PAPI_PATH` environment variables.
 
 To install libPAPI on Debian/Ubuntu, you'll need to run
 ```bash
