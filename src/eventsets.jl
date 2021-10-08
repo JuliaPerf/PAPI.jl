@@ -78,7 +78,7 @@ function Base.append!(evtset::EventSet, evts::Vector{Event})
     append!(evtset.events, evts)
     evtset
 end
-Base.append!(evtset::EventSet, evts::AbstractVector{Event}) = Base.append!(evtset, collect(evts))
+Base.append!(evtset::EventSet, evts::AbstractVector{Event}) = append!(evtset, collect(evts))
 
 function remove!(collection::AbstractVector, item)
     index = findfirst(isequal(item), collection)
