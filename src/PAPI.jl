@@ -25,6 +25,7 @@ include("counters.jl")
 include("components.jl")
 include("sampling.jl")
 include("prettyprint.jl")
+include("serialization.jl")
 include("numa.jl")
 
 function __init__()

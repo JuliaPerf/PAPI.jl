@@ -4,6 +4,7 @@ authors = ["Tom Haber <tom.haber@uhasselt.be>"]
 version = "0.1.0"
 
 [deps]
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 NUMA_jll = "7f51dc2b-bb24-59f8-b771-bb1490e4195d"
 PAPI_jll = "062e04e5-c3d3-5549-ab66-579a72a7bc1b"
