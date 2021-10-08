@@ -23,20 +23,18 @@ See the [Index](@ref main-index) for the complete list of documented functions a
 
 ## Prerequisites
 
-The package depends on `libPAPI` which can either be installed on the system (recommended) or from `PAPI_jll` (default) which is available from https://github.com/tomhaber/PAPI_jll.jl.
-
-To install PAPI_jll, you'll need to run
-```julia
-import Pkg; Pkg.add("https://github.com/tomhaber/PAPI_jll.jl")
-```
+The package depends on `libPAPI` which can either be installed on the system (recommended) or from `PAPI_jll` (default).
 
 To use the system's libPAPI, you'll need to build PAPI.jl as follows
+
 ```bash
-JULIA_PAPI_BINARY=system julia -e 'import Pkg; Pkg.build()'
+JULIA_PAPI_BINARY=system julia -e 'import Pkg; Pkg.build("PAPI")'
 ```
+
 This will try to locate libPAPI on the system. Additional hints can be given using: `JULIA_PAPI_LIBRARY` and `JULIA_PAPI_PATH` environment variables.
 
 To install libPAPI on Debian/Ubuntu, you'll need to run
+
 ```bash
 sudo apt-get install libpapi-dev
 ```
