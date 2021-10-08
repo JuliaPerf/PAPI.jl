@@ -45,8 +45,8 @@ deps = if binary == "system"
     end
 
     papi_version = try
-        papi_version = Cmd([path == "" ? "papi_version" : joinpath(path, "bin", "papi_version")])
-        output = chomp(read(papi_version, String))
+        papi_version_cmd = Cmd([path == "" ? "papi_version" : joinpath(path, "bin", "papi_version")])
+        output = chomp(read(papi_version_cmd, String))
         startswith(output, "PAPI Version: ") || error("unexpected output from $papi_version")
         v = output[15:end]
         m = match(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?$", v)
