@@ -1,7 +1,7 @@
 name = "PAPI"
 uuid = "c3f66453-0ce3-4e3d-8601-c404262f204f"
 authors = ["Tom Haber <tom.haber@uhasselt.be>"]
-version = "0.1.0"
+version = "0.3.0"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
