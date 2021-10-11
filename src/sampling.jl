@@ -14,7 +14,7 @@ struct EventStats
     time::Vector{Counts}
 end
 
-EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, Counts[]), Counts(0))
+EventStats(events::Vector{Event}) = EventStats(events, zeros(Counts, (0, length(events))),zeros(Counts, 0))
 
 gcscrub() = (GC.gc(); GC.gc(); GC.gc(); GC.gc())
 
