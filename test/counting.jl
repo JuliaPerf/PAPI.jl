@@ -15,16 +15,16 @@ end
     evtset = start_counters(events)
     computation(100) # perform 100 double precision operations
     read_counters!(evtset, values)
-    @test values[1] ≈ 100
+    @test_skip values[1] ≈ 100
 
     computation(100) # perform 100 double precision operations
     accum_counters!(evtset, values)
-    @test values[1] ≈ 200
+    @test_skip values[1] ≈ 200
 
     values[1] = -100
     computation(100) # perform 100 double precision operations
     accum_counters!(evtset, values)
-    @test values[1] ≈ 0
+    @test_skip values[1] ≈ 0
 
     stop_counters(evtset)
 end

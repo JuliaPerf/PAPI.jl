@@ -132,6 +132,10 @@ end
 
 Base.promote_rule(::Type{Native}, ::Type{Preset}) = Event
 
+function Base.:(==)(x::Event, y::Event)
+    Base.bitcast(Cuint, x) == Base.bitcast(Cuint, y)
+end
+
 function exists(evt::Event)
     errcode = ccall((:PAPI_query_event, libpapi), Cint, (Cuint,), evt)
     if errcode != PAPI_OK && errcode != PAPI_ENOEVNT
