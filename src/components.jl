@@ -10,7 +10,7 @@ function iterate(comp::Component)
     id = Ref{Cuint}(PAPI_NATIVE_MASK)
     ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_FIRST, comp.cid)
     if ret == PAPI_OK
-        (Native(id[]), id)
+        (Event(id[]), id)
     else
         nothing
     end
@@ -19,7 +19,7 @@ end
 function iterate(comp::Component, id::Ref{Cuint})
     ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_EVENTS, comp.cid)
     if ret == PAPI_OK
-        (Native(id[]), id)
+        (Event(id[]), id)
     else
         nothing
     end
