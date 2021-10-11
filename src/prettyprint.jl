@@ -67,17 +67,17 @@ function show(io::IO, stats::EventStats)
     print(io, "\n  runtime = ", stats.time, " nsecs")
 end
 
-function has_event(f::Function, evt::Event, stats::EventValues)
+function has_event(f::Function, evt::Event, stats::EventValues, args...)
     idx = findfirst(isequal(evt), stats.events)
     if idx !== nothing
-        f(stats.vals[idx])
+        f(stats.vals[idx], args...)
     end
 end
 
-function has_event(f::Function, evt::Event, stats::EventStats)
+function has_event(f::Function, evt::Event, stats::EventStats, args...)
     idx = findfirst(isequal(evt), stats.events)
     if idx !== nothing
-        f(stats.samples[:, idx])
+        f(stats.samples[:, idx], args...)
     end
 end
 
@@ -111,172 +111,275 @@ function percentage(num::Union{Counts, AbstractVector{Counts}}, den::Union{Count
 end
 
 function print_shadow(io::IO, evt::Event, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
-    if evt == TOT_INS
-        has_event(TOT_CYC, stats) do cycles
-            print(io, " # $(ratio(value, cycles)) insn per cycle")
-        end
+    print_shadow(Val(evt), io, value, stats)
+end
 
-        has_event(RES_STL, stats) do stalled_cycles
-            print(io, " # $(ratio(stalled_cycles, value)) stalled cycles per insn")
-        end
-    elseif evt == TOT_CYC
-        print(io, " # $(ratio(value, stats.time)) Ghz")
-
-        has_event(TOT_INS, stats) do cycles
-            print(io, " # $(ratio(value, cycles)) cycles per insn")
-        end
-    elseif evt == BR_MSP
-        has_event(BR_INS, stats) do branches
-            pct = percentage(value, branches)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all branches")
-        end
-    elseif evt == L1_LDM || evt == L2_LDM || evt == L3_LDM
-        has_event(LD_INS, stats) do loads
-            pct = percentage(value, loads)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all loads")
-        end
-    elseif evt == L1_STM || evt == L2_STM || evt == L3_STM
-        has_event(SR_INS, stats) do stores
-            pct = percentage(value, stores)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all stores")
-        end
-    elseif evt == L1_TCM || evt == L1_TCH
-        has_event(L1_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            color = pct_color(evt == L1_TCM ? pct : 1.0 - pct)
-            print(io, " # $color$pct%$COLOR_RESET of all L1 cache refs")
-        end
-    elseif evt == L1_DCM || evt == L1_DCA || evt == L1_DCW || evt == L1_DCR
-        has_event(L1_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            print(io, " # $pct% of all L1 cache refs")
-        end
-
-        if evt == L1_DCM
-            has_event(L1_DCA, stats) do accesses
-                pct = percentage(value, accesses)
-                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L1 cache refs")
-            end
-        end
-    elseif evt == L2_TCM || evt == L2_TCH
-        has_event(L2_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            color = pct_color(evt == L2_TCM ? pct : 1.0 - pct)
-            print(io, " # $color$pct%$COLOR_RESET of all L2 cache refs")
-        end
-    elseif evt == L2_DCM || evt == L2_DCA || evt == L2_DCW || evt == L2_DCR
-        has_event(L2_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            print(io, " # $pct% of all L2 cache refs")
-        end
-
-        if evt == L2_DCM
-            has_event(L2_DCA, stats) do accesses
-                pct = percentage(value, accesses)
-                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L2 cache refs")
-            end
-        end
-    elseif evt == L3_TCM || evt == L3_TCH
-        has_event(L3_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            color = pct_color(evt == L3_TCM ? pct : 1.0 - pct)
-            print(io, " # $color$pct%$COLOR_RESET of all L3 cache refs")
-        end
-    elseif evt == L3_DCM || evt == L3_DCA || evt == L3_DCW || evt == L3_DCR
-        has_event(L3_TCA, stats) do accesses
-            pct = percentage(value, accesses)
-            print(io, " # $pct% of all L3 cache refs")
-        end
-
-        if evt == L3_DCM
-            has_event(L3_DCA, stats) do accesses
-                pct = percentage(value, accesses)
-                print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L3 cache refs")
-            end
-        end
-    elseif evt == TLB_DM
-        has_event(LST_INS, stats) do lst
-            pct = percentage(value, lst)
-            print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
-        end
-    elseif evt in (FMA_INS, FP_INS, BR_INS, VEC_INS, FAD_INS, SR_INS, LD_INS, INT_INS, LST_INS, SYC_INS, FML_INS, FDV_INS, FSQ_INS, FNV_INS)
-        has_event(TOT_INS, stats) do insn
-            pct = percentage(value, insn)
-            print(io, " # $pct% of all instructions")
-        end
-
-        unit = 'G'
-        r = ratio(value, stats.time)
-        if r < 1.
-            unit = 'M'
-            r *= 1e3
-        elseif r < 1e-6
-            unit = 'K'
-            r *= 1e6
-        end
-        print(io, " # $r $unit/sec ")
-    elseif evt in (STL_ICY, FUL_ICY, STL_CCY, FUL_CCY, MEM_SCY, MEM_RCY, MEM_WCY)
-        has_event(TOT_CYC, stats) do cycles
-            pct = percentage(value, cycles)
-            print(io, " # $pct% of all cycles")
-        end
-    elseif evt == SP_OPS || evt == DP_OPS
-        has_event(FP_INS, stats) do insn
-            pct = percentage(value, insn)
-            print(io, " # $pct% of all fp instructions")
-        end
-
-        has_event(TOT_INS, stats) do insn
-            pct = percentage(value, insn)
-            print(io, " # $pct% of all instructions")
-        end
-
-        has_event(evt == SP_OPS ? VEC_SP : VEC_DP, stats) do vec
-            x = ratio(value, vec)
-            print(io, " # $(x)x vectorized")
-        end
-    elseif evt == VEC_SP || evt == VEC_DP
-        has_event(VEC_INS, stats) do insn
-            pct = percentage(value, insn)
-            print(io, " # $pct% of all vec instructions")
-        end
-
-        has_event(TOT_INS, stats) do insn
-            pct = percentage(value, insn)
-            print(io, " # $pct% of all instructions")
-        end
-    elseif evt in (MEM_RCY, MEM_SCY, MEM_WCY, RES_STL)
-        has_event(TOT_CYC, stats) do cycles
-            pct = percentage(value, cycles)
-            color = if pct > 50
-                COLOR_RED
-            elseif pct > 30
-                COLOR_MAGENTA
-            elseif pct > 10
-                COLOR_YELLOW
-            else
-                COLOR_NONE
-            end
-            print(io, " # $color$pct%$COLOR_RESET of all cycles")
-        end
-    else
-        unit = 'G'
-        r = ratio(value, stats.time)
-        if r < 1.
-            unit = 'M'
-            r *= 1e3
-        elseif r < 1e-6
-            unit = 'K'
-            r *= 1e6
-        end
-
-        print(io, " # $r $unit/sec ")
+function print_shadow(::Val{TOT_INS}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(TOT_CYC, stats) do cycles
+        print(io, " # $(ratio(value, cycles)) insn per cycle")
     end
 
-    if evt in (L1_DCM, L1_DCA, L1_DCW, L1_DCR, L2_DCM, L2_DCA, L2_DCW, L2_DCR, L3_DCM, L3_DCA, L3_DCW, L3_DCR)
-        has_event(LST_INS, stats) do lst
-            pct = percentage(value, lst)
-            print(io, " # $pct of all load/stores")
-        end
+    has_event(RES_STL, stats) do stalled_cycles
+        print(io, " # $(ratio(stalled_cycles, value)) stalled cycles per insn")
     end
+end
+
+function print_shadow(::Val{TOT_CYC}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    print(io, " # $(ratio(value, stats.time)) Ghz")
+
+    has_event(TOT_INS, stats) do cycles
+        print(io, " # $(ratio(value, cycles)) cycles per insn")
+    end
+end
+
+function print_shadow(::Val{BR_MSP}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(BR_INS, stats) do branches
+        pct = percentage(value, branches)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all branches")
+    end
+end
+
+function print_shadow(::Union{Val{L1_LDM}, Val{L2_LDM}, Val{L3_LDM}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(LD_INS, stats) do loads
+        pct = percentage(value, loads)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all loads")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Union{Val{L1_STM}, Val{L2_STM}, Val{L3_STM}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(SR_INS, stats) do stores
+        pct = percentage(value, stores)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all stores")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Union{Val{L1_TCM}, Val{L1_TCH}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L1_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        color = pct_color(evt == L1_TCM ? pct : 1.0 - pct)
+        print(io, " # $color$pct%$COLOR_RESET of all L1 cache refs")
+    end
+end
+
+function print_shadow(::Union{Val{L1_DCA}, Val{L1_DCW}, Val{L1_DCR}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L1_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L1 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{L1_DCM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L1_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L1 cache refs")
+    end
+
+    has_event(L1_DCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L1 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{L2_TCM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L2_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        color = pct_color(pct)
+        print(io, " # $color$pct%$COLOR_RESET of all L2 cache refs")
+    end
+end
+
+function print_shadow(::Val{L2_TCH}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L2_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        color = pct_color(1.0 - pct)
+        print(io, " # $color$pct%$COLOR_RESET of all L2 cache refs")
+    end
+end
+
+function print_shadow(::Union{Val{L2_DCA}, Val{L2_DCW}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L2_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L2 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{L2_DCM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L2_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L2 cache refs")
+    end
+
+    has_event(L2_DCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L2 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{L3_TCM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L3_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        color = pct_color(pct)
+        print(io, " # $color$pct%$COLOR_RESET of all L3 cache refs")
+    end
+end
+
+function print_shadow(:: Val{L3_TCH}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L3_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        color = pct_color(1.0 - pct)
+        print(io, " # $color$pct%$COLOR_RESET of all L3 cache refs")
+    end
+end
+
+function print_shadow(::Union{Val{L3_DCA}, Val{L3_DCW}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L3_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L3 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{L3_DCM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(L3_TCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $pct% of all L3 cache refs")
+    end
+
+    has_event(L3_DCA, stats) do accesses
+        pct = percentage(value, accesses)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of data L3 cache refs")
+    end
+
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $pct of all load/stores")
+    end
+end
+
+function print_shadow(::Val{TLB_DM}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(LST_INS, stats) do lst
+        pct = percentage(value, lst)
+        print(io, " # $(pct_color(pct))$pct%$COLOR_RESET of all load/stores")
+    end
+end
+
+const INS_UNION = Union{Val{FMA_INS}, Val{FP_INS}, Val{BR_INS}, Val{VEC_INS}, Val{FAD_INS},
+            Val{SR_INS}, Val{LD_INS}, Val{INT_INS}, Val{LST_INS}, Val{SYC_INS},
+            Val{FML_INS}, Val{FDV_INS}, Val{FSQ_INS}, Val{FNV_INS}}
+function print_shadow(::INS_UNION, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(TOT_INS, stats) do insn
+        pct = percentage(value, insn)
+        print(io, " # $pct% of all instructions")
+    end
+
+    unit = 'G'
+    r = ratio(value, stats.time)
+    if r < 1.
+        unit = 'M'
+        r *= 1e3
+    elseif r < 1e-6
+        unit = 'K'
+        r *= 1e6
+    end
+    print(io, " # $r $unit/sec ")
+end
+
+function print_shadow(::Union{Val{STL_ICY}, Val{FUL_ICY}, Val{STL_CCY}, Val{FUL_CCY}, Val{MEM_SCY}, Val{MEM_RCY}, Val{MEM_WCY}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(TOT_CYC, stats) do cycles
+        pct = percentage(value, cycles)
+        print(io, " # $pct% of all cycles")
+    end
+end
+
+function print_shadow(evt::Union{Val{SP_OPS}, Val{DP_OPS}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(FP_INS, stats) do insn
+        pct = percentage(value, insn)
+        print(io, " # $pct% of all fp instructions")
+    end
+
+    has_event(TOT_INS, stats) do insn
+        pct = percentage(value, insn)
+        print(io, " # $pct% of all instructions")
+    end
+
+    has_event(evt == Val(SP_OPS) ? VEC_SP : VEC_DP, stats) do vec
+        x = ratio(value, vec)
+        print(io, " # $(x)x vectorized")
+    end
+end
+
+function print_shadow(::Union{Val{VEC_SP}, Val{VEC_DP}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(VEC_INS, stats) do insn
+        pct = percentage(value, insn)
+        print(io, " # $pct% of all vec instructions")
+    end
+
+    has_event(TOT_INS, stats) do insn
+        pct = percentage(value, insn)
+        print(io, " # $pct% of all instructions")
+    end
+end
+
+function print_shadow(::Union{Val{MEM_RCY}, Val{MEM_SCY}, Val{MEM_WCY}, Val{RES_STL}}, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    has_event(TOT_CYC, stats) do cycles
+        pct = percentage(value, cycles)
+        color = if pct > 50
+            COLOR_RED
+        elseif pct > 30
+            COLOR_MAGENTA
+        elseif pct > 10
+            COLOR_YELLOW
+        else
+            COLOR_NONE
+        end
+        print(io, " # $color$pct%$COLOR_RESET of all cycles")
+    end
+end
+
+function print_shadow(::Val, io::IO, value::Union{Counts, AbstractVector{Counts}}, stats::Union{EventStats, EventValues})
+    unit = 'G'
+    r = ratio(value, stats.time)
+    if r < 1.
+        unit = 'M'
+        r *= 1e3
+    elseif r < 1e-6
+        unit = 'K'
+        r *= 1e6
+    end
+
+    print(io, " # $r $unit/sec ")
 end
