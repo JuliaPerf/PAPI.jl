@@ -115,7 +115,11 @@ is_preset(evt::Cuint) = ((evt & PAPI_PRESET_MASK) != 0) && ((evt & PAPI_NATIVE_M
 is_native(evt::Cuint) = ((evt & PAPI_PRESET_MASK) == 0) && ((evt & PAPI_NATIVE_MASK) != 0)
 
 primitive type Native sizeof(Cuint)*8 end
-Native(x::Integer) = Base.bitcast(Native, convert(Cuint, x))
+function Native(x::Integer)
+    is_native(x) || throw(ArgumentError("invalid value for native event: $x"))
+    Base.bitcast(Native, convert(Cuint, x))
+end
+
 Base.cconvert(::Type{T}, x::Native) where {T<:Integer} = Base.bitcast(T, x)::T
 
 const Event = Union{Preset, Native}

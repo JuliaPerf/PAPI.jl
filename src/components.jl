@@ -8,7 +8,7 @@ eltype(::Type{Component}) = Native
 
 function iterate(comp::Component)
     id = Ref{Cuint}(PAPI_NATIVE_MASK)
-    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_FIRST, comp.cid)
+    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_FIRST, getfield(comp, :cid))
     if ret == PAPI_OK
         (Event(id[]), id)
     else
@@ -17,7 +17,7 @@ function iterate(comp::Component)
 end
 
 function iterate(comp::Component, id::Ref{Cuint})
-    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_EVENTS, comp.cid)
+    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_EVENTS, getfield(comp, :cid))
     if ret == PAPI_OK
         (Event(id[]), id)
     else
@@ -25,22 +25,53 @@ function iterate(comp::Component, id::Ref{Cuint})
     end
 end
 
-function find_component(name::AbstractString)
-    numcmp = ccall((:PAPI_num_components, libpapi), Cint, ())
+function find_component(name::AbstractString; throw_on_error::Bool=true)
+    cid = ccall((:PAPI_get_component_index, libpapi), Cint, (Cstring,), name)
+    if cid >= 0
+        Component(cid)
+    else
+        throw_on_error && throw(PAPIError("find_component failed to locate component $name"))
+        nothing
+    end
+end
 
-    for cid in 0:numcmp-1
-        info = ccall((:PAPI_get_component_info, libpapi), Ptr{UInt8}, (Cint,), cid)
-        if info == C_NULL
-            throw(PAPIError("PAPI_get_component_info returned NULL"))
-        end
+Component(name::AbstractString) = find_component(name)
 
-        shortname = unsafe_string(info + PAPI_MAX_STR_LEN)
-        if shortname == name
-            return Component(cid)
+function _cleanup_name(evt::Event)
+    name = event_to_name(evt)
+    idx = findfirst("::", name)
+    short_name = replace(idx === nothing ? name : name[last(idx)+1:end], "-" => "_")
+    Symbol(short_name)
+end
+
+import Base: propertynames, getproperty
+propertynames(c::Component) = map(_cleanup_name, c)
+
+function getproperty(c::Component, prop::Symbol)
+    name = String(prop)
+
+    # Try to find it using name_to_event
+    evt = try_name_to_event(name)
+    if evt !== nothing && get_event_component_id(evt) == getfield(c, :cid)
+        return evt
+    end
+
+    # Convert from _ to - and try again
+    evt = try_name_to_event( replace(name, "_" => "-") )
+    if evt !== nothing && get_event_component_id(evt) == getfield(c, :cid)
+        return evt
+    end
+
+    # Fall-back
+    str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
+    for evt in c
+        @papichk ccall((:PAPI_event_code_to_name, libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
+        if name == unsafe_string(pointer(str_buf))
+            return evt
         end
     end
 
-    throw(PAPIError("find_component failed to locate component $name"))
+    nothing
 end
 
 function list_components()
@@ -90,4 +121,15 @@ function available_native()
     end
 
     events
+end
+
+function get_event_component_id(evt::Native)
+    cidx = ccall((:PAPI_get_event_component, libpapi), Cint, (Cint,), evt)
+    cidx < 0 && throw(PAPIError(cidx))
+    cidx
+end
+
+function get_event_component(evt::Native)
+    cidx = get_event_component_id(evt)
+    Component(cidx)
 end

@@ -67,7 +67,7 @@ end
 
 export PAPIError, num_counters, start_counters, read_counters!, accum_counters!, stop_counters, stop_counters!
 export @profile, @sample, sample, profile, @numaprofile, numaprofile
-export name_to_event, event_to_name, @event_str
+export name_to_event, event_to_name, @event_str, get_event_component
 export find_component, exists, available_presets, available_native, Event, Counts, EventSet
 export load, save
 end # module
