@@ -37,19 +37,22 @@ end
 
 Component(name::AbstractString) = find_component(name)
 
-function _cleanup_name(evt::Event)
+function cleanup_name(evt::Event)
     name = event_to_name(evt)
     idx = findfirst("::", name)
-    short_name = replace(idx === nothing ? name : name[last(idx)+1:end], "-" => "_")
-    Symbol(short_name)
+    replace(idx === nothing ? name : name[last(idx)+1:end], "-" => "_")
 end
 
-import Base: propertynames, getproperty
-propertynames(c::Component) = map(_cleanup_name, c)
+import Base: propertynames, getproperty, keys, getindex
+propertynames(c::Component) = map(Symbol ∘ cleanup_name, c)
+keys(c::Component) = map(cleanup_name, c)
 
 function getproperty(c::Component, prop::Symbol)
     name = String(prop)
+    getindex(c, name)
+end
 
+function getindex(c::Component, name::AbstractString)
     # Try to find it using name_to_event
     evt = try_name_to_event(name)
     if evt !== nothing && get_event_component_id(evt) == getfield(c, :cid)
