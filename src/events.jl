@@ -111,6 +111,9 @@
     END      # This should always be last!
 )
 
+is_preset(evt::Cuint) = ((evt & PAPI_PRESET_MASK) != 0) && ((evt & PAPI_NATIVE_MASK) == 0)
+is_native(evt::Cuint) = ((evt & PAPI_PRESET_MASK) == 0) && ((evt & PAPI_NATIVE_MASK) != 0)
+
 primitive type Native sizeof(Cuint)*8 end
 Native(x::Integer) = Base.bitcast(Native, convert(Cuint, x))
 Base.cconvert(::Type{T}, x::Native) where {T<:Integer} = Base.bitcast(T, x)::T
@@ -147,7 +150,11 @@ Converts event name into an event
 function name_to_event(name::AbstractString)
     evt = Ref{Cuint}()
     @papichk ccall((:PAPI_event_name_to_code, libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
-    Native(evt[])
+    if is_preset(evt[])
+        Preset(evt[])
+    else
+        Native(evt[])
+    end
 end
 
 function Base.show(io::IO, evt::Native)
