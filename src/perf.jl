@@ -1,1 +1,4 @@
-const Perf = find_component("perf_event"; throw_on_error=false)
+const Perf = find_component("perf_event")
+export Perf
+
+@info "loading perf support"
