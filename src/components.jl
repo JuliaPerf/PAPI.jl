@@ -35,6 +35,8 @@ function find_component(name::AbstractString; throw_on_error::Bool=true)
     end
 end
 
+has_component(name::AbstractString) = find_component(name; throw_on_error=false) !== nothing
+
 Component(name::AbstractString) = find_component(name)
 
 function cleanup_name(evt::Event)
