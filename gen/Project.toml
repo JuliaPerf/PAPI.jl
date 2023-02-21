@@ -1,0 +1,6 @@
+[deps]
+Clang = "40e3b903-d033-50b4-a0cc-940c62c95e31"
+PAPI_jll = "062e04e5-c3d3-5549-ab66-579a72a7bc1b"
+
+[extras]
+CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"

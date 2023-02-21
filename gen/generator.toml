@@ -1,0 +1,8 @@
+[general]
+library_name = "libpapi"
+output_file_path = "./libPAPI.jl"
+module_name = "API"
+jll_pkg_name = "PAPI_jll"
+prologue_file_path = "./prologue.jl"
+print_enum_as_integer = true
+print_using_CEnum = false

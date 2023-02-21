@@ -6,9 +6,24 @@ using Preferences
 
 if !PAPI_jll.is_available()
     const libpapi = load_preference(PAPI_jll, "libPAPI_path", nothing)
-    is_available() = libpapi !== nothing
+end
+
+function lib_version()
+    PAPI_LIB_VERSION = Cint(21)
+    return ccall((:PAPI_get_opt, libpapi), Cint, (Cint, Ptr{Cvoid}), PAPI_LIB_VERSION, C_NULL)
+end
+
+if libpapi !== nothing
+    major = lib_version() >> 24
+    api_file = joinpath(@__DIR__, "API", string(major), "libPAPI.jl")
+    if !isfile(api_file)
+        @warn "File an issue to regenerate headers for PAPI version" major
+    else
+        include(api_file)
+        is_available() = true
+    end
 else
-    is_available() = PAPI_jll.is_available()
+    is_available() = false
 end
 
 """
@@ -77,15 +92,11 @@ include("prettyprint.jl")
 include("serialization.jl")
 include("numa.jl")
 
-if is_available()
-    const papi_current_version = get_option(PAPI_LIB_VERSION, C_NULL)
-end
-
 function __init__()
     if is_available()
         # init the library and make sure that some counters are available
-        rv = ccall((:PAPI_library_init, libpapi), Cint, (Cint,), papi_current_version)
-        if rv != papi_current_version
+        rv = API.PAPI_library_init(API.PAPI_VER_CURRENT)
+        if rv != API.PAPI_VER_CURRENT
             if rv > 0
                 error("PAPI library version mismatch!")
             else

@@ -20,8 +20,8 @@ CUDA = "4"
 JSON = "0.21"
 NUMA_jll = "2"
 PAPI_jll = "7"
-Statistics = "1"
 Preferences = "1"
+Statistics = "1"
 julia = "1.6"
 
 [extras]
