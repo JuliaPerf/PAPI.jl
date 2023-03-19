@@ -1,8 +1,6 @@
 module API
 
-using PAPI_jll
-export PAPI_jll
-
+import ..PAPI: libpapi
 PAPI_VERSION_NUMBER(maj,min,rev,inc) = (((maj)<<24) | ((min)<<16) | ((rev)<<8) | (inc))
 
 

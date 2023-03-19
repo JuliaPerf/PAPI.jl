@@ -1,11 +1,19 @@
 module PAPI
 
 using NUMA_jll
-using PAPI_jll
+import PAPI_jll
 using Preferences
 
-if !PAPI_jll.is_available()
-    const libpapi = load_preference(PAPI_jll, "libPAPI_path", nothing)
+const libPAPI_preference = @load_preference("libPAPI_path", nothing)
+
+if libPAPI_preference === nothing
+    if PAPI_jll.is_available()
+        const libpapi = PAPI_jll.libPAPI_path
+    else
+        const libpapi = nothing
+    end
+else
+    const libpapi = libPAPI_preference
 end
 
 function lib_version()
@@ -55,10 +63,9 @@ function set_library!(path)
     if !ispath(path)
         error("PAPI library path $path not found")
     end
-    set_preferences!(
-        PAPI_jll,
-        "libPAPI_path" => realpath(path);
-        force=true,
+    @set_preferences!(
+        "libPAPI_path" => realpath(path),
+        force=true
     )
     @warn "PAPI library path changed, you will need to restart Julia for the change to take effect" path
 
