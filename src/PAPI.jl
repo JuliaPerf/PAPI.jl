@@ -8,7 +8,7 @@ const libPAPI_preference = @load_preference("libPAPI_path", nothing)
 
 if libPAPI_preference === nothing
     if PAPI_jll.is_available()
-        const libpapi = PAPI_jll.libPAPI_path
+        const libpapi = PAPI_jll.libpapi_path
     else
         const libpapi = nothing
     end
@@ -100,6 +100,18 @@ include("serialization.jl")
 include("numa.jl")
 
 function __init__()
+    if PAPI_jll.is_available()
+        cuda = PAPI_jll.host_platform["cuda"]
+        if cuda !== "local" && cuda !== "none"
+            CUDA_Runtime = PAPI_jll.CUDA_Runtime_jll
+            CUDA_Driver = CUDA_Runtime.CUDA_Driver_jll
+            ENV["PAPI_CUDA_MAIN"] = CUDA_Driver.libcuda
+            ENV["PAPI_CUDA_RUNTIME"] = CUDA_Runtime.libcudart
+            ENV["PAPI_CUDA_CUPTI"] = CUDA_Runtime.libcupti
+            ENV["PAPI_CUDA_PERFWORKS"] = CUDA_Runtime.libnvperf_host
+        end
+    end
+
     if is_available()
         # init the library and make sure that some counters are available
         rv = API.PAPI_library_init(API.PAPI_VER_CURRENT)
