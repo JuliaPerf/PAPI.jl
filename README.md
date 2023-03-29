@@ -20,7 +20,7 @@ Its goal is to implement useful primitives that developers can easily understand
 @sample sum(X)
 ```
 
-Please see the [documentation](https://tomhaber.github.io/PAPI.jl/stable/) for instructions and examples.
+Please see the [documentation](https://juliaperf.github.io/PAPI.jl/stable/) for instructions and examples.
 
 ## Prerequisites
 
@@ -56,6 +56,6 @@ stats = @profile mysum(X)
 Contributions are encouraged. In particular, PAPI provides many components, configurable at compilation time,
 while counters can be accessed through the native API by name, this can be cumbersome, low-level and ill-documented.
 
-If there are additional functions you would like to use, please open an [issue](https://github.com/tomhaber/PAPI.jl/issues) or [pull request](https://github.com/tomhaber/PAPI.jl/pulls).
+If there are additional functions you would like to use, please open an [issue](https://github.com/JuliaPerf/PAPI.jl/issues) or [pull request](https://github.com/JuliaPerf/PAPI.jl/pulls).
 
 Additional examples and documentation improvements are also very welcome.
