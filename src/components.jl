@@ -2,24 +2,30 @@ struct Component
     cid::Cint
 end
 
+# No GC safety needed
+Base.cconvert(::Type{Cint}, c::Component) = c.cid
+
 import Base: iterate, IteratorSize, SizeUnknown, eltype
 IteratorSize(::Type{Component}) = SizeUnknown()
 eltype(::Type{Component}) = Native
 
 function iterate(comp::Component)
-    id = Ref{Cuint}(PAPI_NATIVE_MASK)
-    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_FIRST, comp.cid)
+    r_id = Ref{Cint}(Cint(0)| API.PAPI_NATIVE_MASK)
+    ret = API.PAPI_enum_cmp_event(r_id, API.PAPI_ENUM_FIRST, comp)
     if ret == PAPI_OK
-        (Native(id[]), id)
+        id = r_id[]
+        (Native(id), id)
     else
         nothing
     end
 end
 
-function iterate(comp::Component, id::Ref{Cuint})
-    ret = ccall((:PAPI_enum_cmp_event, libpapi), Cint, (Ptr{Cuint}, Cint, Cint), id, PAPI_ENUM_EVENTS, comp.cid)
+function iterate(comp::Component, id::Cint)
+    r_id = Ref(id)
+    ret = API.PAPI_enum_cmp_event(r_id, API.PAPI_ENUM_EVENTS, comp)
     if ret == PAPI_OK
-        (Native(id[]), id)
+        id = r_id[]
+        (Native(id), id)
     else
         nothing
     end
@@ -46,7 +52,7 @@ end
 function list_components()
     numcmp = ccall((:PAPI_num_components, libpapi), Cint, ())
 
-    map(0:numcmp-1) do cid
+    map(0:(numcmp-1)) do cid
         info = ccall((:PAPI_get_component_info, libpapi), Ptr{UInt8}, (Cint,), cid)
         if info == C_NULL
             throw(PAPIError("PAPI_get_component_info returned NULL"))
@@ -90,4 +96,27 @@ function available_native()
     end
 
     events
+end
+
+function EventSet(c::Component)
+    ev_set = EventSet()
+    API.PAPI_assign_eventset_component(ev_set, c)
+    return ev_set
+end
+
+function info(c::Component)
+    info = API.PAPI_get_component_info(c)
+    name = Base.unsafe_string(Base.unsafe_convert(Ptr{Cchar}, info.name))
+
+    initialized = Base.unsafe_load(info.initialized)
+    disabled = Base.unsafe_load(info.disabled)
+
+    if disabled == 0
+        disabled = false
+        disabled_reason = nothing
+    else
+        disabled = PAPIError(disabled)
+        disabled_reason = Base.unsafe_string(Base.unsafe_convert(Ptr{Cchar}, info.disabled_reason))
+    end
+    return (;name, initialized, disabled, disabled_reason)
 end

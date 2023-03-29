@@ -22,7 +22,8 @@ mutable struct EventSet
 end
 
 # allows us to pass EventSet objects directly into ccall signatures
-function Base.cconvert(::Type{Cint}, evtset::EventSet)
+Base.cconvert(::Type{Cint}, evtset::EventSet) = evtset
+function Base.unsafe_convert(::Type{Cint}, evtset::EventSet)
     evtset.val
 end
 
