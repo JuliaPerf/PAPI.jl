@@ -60,11 +60,11 @@ function Base.push!(evtset::EventSet, evt::Event)
 end
 
 """
-    append!(evtset::EventSet, evt::Event)
+    append!(evtset::EventSet, evt::Vector{<:Event})
 
 Adds multiple PAPI events to the set. The events can be either a native or preset events.
 """
-function Base.append!(evtset::EventSet, evts::Vector{Event})
+function Base.append!(evtset::EventSet, evts::Vector{<:Event})
     errcode = ccall((:PAPI_add_events, libpapi), Cint, (Cint, Ptr{Cuint}, Cint), evtset, evts, length(evts))
     if errcode < 0
         throw(PAPIError(errcode))
@@ -78,7 +78,7 @@ function Base.append!(evtset::EventSet, evts::Vector{Event})
     append!(evtset.events, evts)
     evtset
 end
-Base.append!(evtset::EventSet, evts::AbstractVector{Event}) = append!(evtset, collect(evts))
+Base.append!(evtset::EventSet, evts::AbstractVector{<:Event}) = append!(evtset, collect(evts))
 
 function remove!(collection::AbstractVector, item)
     index = findfirst(isequal(item), collection)
@@ -112,11 +112,11 @@ function Base.empty!(evtset::EventSet)
 end
 
 """
-    EventSet(evts::AbstractVector{Events})
+    EventSet(evts::AbstractVector{<:Events})
 
 Create an eventset containing the specified events. The events can be either native or preset PAPI events.
 """
-function EventSet(evts::AbstractVector{Event})
+function EventSet(evts::AbstractVector{<:Event})
     evtset = EventSet()
     append!(evtset, evts)
     evtset

@@ -115,18 +115,32 @@ is_preset(evt::Cuint) = ((evt & PAPI_PRESET_MASK) != 0) && ((evt & PAPI_NATIVE_M
 is_native(evt::Cuint) = ((evt & PAPI_PRESET_MASK) == 0) && ((evt & PAPI_NATIVE_MASK) != 0)
 
 primitive type Native sizeof(Cuint)*8 end
-Native(x::Integer) = Base.bitcast(Native, convert(Cuint, x))
+function Native(x::Integer)
+    is_native(x) || throw(ArgumentError("invalid value for native event: $x"))
+    Base.bitcast(Native, convert(Cuint, x))
+end
+
 Base.cconvert(::Type{T}, x::Native) where {T<:Integer} = Base.bitcast(T, x)::T
 
 const Event = Union{Preset, Native}
 
+Event(evt::Cuint) = if is_preset(evt)
+    Preset(evt)
+else
+    Native(evt)
+end
+
 Base.promote_rule(::Type{Native}, ::Type{Preset}) = Event
 
+function Base.:(==)(x::Event, y::Event)
+    Base.bitcast(Cuint, x) == Base.bitcast(Cuint, y)
+end
+
 function exists(evt::Event)
-	errcode = ccall((:PAPI_query_event, libpapi), Cint, (Cuint,), evt)
-	if errcode != PAPI_OK && errcode != PAPI_ENOEVNT
-		throw(PAPIError(errcode))
-	end
+    errcode = ccall((:PAPI_query_event, libpapi), Cint, (Cuint,), evt)
+    if errcode != PAPI_OK && errcode != PAPI_ENOEVNT
+        throw(PAPIError(errcode))
+    end
 
     return errcode == PAPI_OK
 end
@@ -137,9 +151,20 @@ end
 Converts an event into a name.
 """
 function event_to_name(evt::Event)
-	str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
-	@papichk ccall((:PAPI_event_code_to_name, libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
-	unsafe_string(pointer(str_buf))
+    str_buf = Vector{UInt8}(undef,PAPI_MAX_STR_LEN)
+    @papichk ccall((:PAPI_event_code_to_name, libpapi), Cint, (Cuint, Ptr{UInt8}), evt, str_buf)
+    unsafe_string(pointer(str_buf))
+end
+
+function try_name_to_event(name::AbstractString)
+    evt = Ref{Cuint}()
+    errcode = ccall((:PAPI_event_name_to_code, libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
+
+    if errcode == PAPI_OK
+        Event(evt[])
+    else
+        nothing
+    end
 end
 
 """
@@ -150,11 +175,7 @@ Converts event name into an event
 function name_to_event(name::AbstractString)
     evt = Ref{Cuint}()
     @papichk ccall((:PAPI_event_name_to_code, libpapi), Cint, (Cstring, Ptr{Cuint}), name, evt)
-    if is_preset(evt[])
-        Preset(evt[])
-    else
-        Native(evt[])
-    end
+    Event(evt[])
 end
 
 function Base.show(io::IO, evt::Native)

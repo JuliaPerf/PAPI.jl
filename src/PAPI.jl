@@ -28,6 +28,20 @@ include("prettyprint.jl")
 include("serialization.jl")
 include("numa.jl")
 
+isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
+
+"""
+    @include("somefile.jl")
+Behaves like `include`, but caches the target file content at macro expansion time
+"""
+macro include(relpath::String)
+    compiletime_path = joinpath(dirname(String(__source__.file)), relpath)
+    s = String(read(compiletime_path))
+    quote
+        include_string($__module__, $s, $relpath)
+    end
+end
+
 function __init__()
     papi_current_version = (papi_version.major << 24) | (papi_version.minor << 16)
 
@@ -43,6 +57,10 @@ function __init__()
 
     if num_counters() == 0
         error("PAPI init error: No counters are available on the current system")
+    end
+
+    if has_component("perf_event")
+        @include("perf.jl")
     end
 
     REFCOUNT[] += 1
@@ -67,7 +85,7 @@ end
 
 export PAPIError, num_counters, start_counters, read_counters!, accum_counters!, stop_counters, stop_counters!
 export @profile, @sample, sample, profile, @numaprofile, numaprofile
-export name_to_event, event_to_name, @event_str
-export find_component, exists, available_presets, available_native, Event, Counts, EventSet
+export name_to_event, event_to_name, @event_str, get_event_component
+export find_component, Component, exists, available_presets, available_native, Event, Counts, EventSet
 export load, save
 end # module
